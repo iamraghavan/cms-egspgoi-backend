@@ -23,7 +23,7 @@ app.use(cookieParser());
 app.use(hpp()); // Prevent Parameter Pollution
 app.use(globalLimiter); // Global Rate Limit
 
-// Routes
+// Routes 
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Admissions CRM API' });
 });
@@ -39,3 +39,5 @@ app.use('/api/v1/smartflo', require('./src/routes/smartfloRoutes'));
 app.use(errorHandler);
 
 module.exports = app;
+
+// 01
