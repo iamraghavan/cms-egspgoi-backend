@@ -5,7 +5,25 @@ const { PutCommand, QueryCommand, ScanCommand, GetCommand } = require("@aws-sdk/
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwtUtils');
 const { TABLE_NAME: USERS_TABLE, schema: userSchema } = require('../models/userModel');
 const { TABLE_NAME: ROLES_TABLE } = require('../models/roleModel');
+const { v4: uuidv4 } = require('uuid');
 
+/**
+ * Registers a new user.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {string} req.body.name - The name of the user.
+ * @param {string} req.body.email - The email of the user.
+ * @param {string} req.body.password - The password of the user.
+ * @param {string} req.body.role_id - The role ID of the user.
+ * @param {string} [req.body.team_id] - The team ID (optional).
+ * @param {string} [req.body.phone] - The phone number (optional).
+ * @param {string} [req.body.designation] - The designation (optional).
+ * @param {string} [req.body.status] - The status (default: 'active').
+ * @param {Object} [req.body.metadata] - Additional metadata (optional).
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const register = async (req, res) => {
   const { name, email, password, role_id, team_id, phone, designation, status, metadata } = req.body;
 
@@ -59,6 +77,16 @@ const register = async (req, res) => {
   }
 };
 
+/**
+ * Logs in a user.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {string} req.body.email - The email of the user.
+ * @param {string} req.body.password - The password of the user.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -126,6 +154,15 @@ const login = async (req, res) => {
   }
 };
 
+/**
+ * Gets the profile of the authenticated user.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.user - The authenticated user object attached to the request.
+ * @param {string} req.user.id - The ID of the authenticated user.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const getProfile = async (req, res) => {
   try {
     const command = new GetCommand({
@@ -147,6 +184,13 @@ const getProfile = async (req, res) => {
   }
 };
 
+/**
+ * Gets all users (Admin only).
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const getAllUsers = async (req, res) => {
   try {
     const command = new ScanCommand({
@@ -163,6 +207,23 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+/**
+ * Creates a new user (Admin only).
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {string} req.body.name - The name of the user.
+ * @param {string} req.body.email - The email of the user.
+ * @param {string} req.body.password - The password of the user.
+ * @param {string} req.body.role - The role name of the user.
+ * @param {string} [req.body.team_id] - The team ID (optional).
+ * @param {string} [req.body.phone] - The phone number (optional).
+ * @param {string} [req.body.designation] - The designation (optional).
+ * @param {string} [req.body.status] - The status (default: 'active').
+ * @param {Object} [req.body.metadata] - Additional metadata (optional).
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const createUser = async (req, res) => {
   const { name, email, password, role, team_id, phone, designation, status, metadata } = req.body;
 
@@ -233,6 +294,14 @@ const createUser = async (req, res) => {
   }
 };
 
+/**
+ * Refreshes the access token using the refresh token from cookies.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.cookies - The cookies attached to the request.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const refreshToken = async (req, res) => {
     const cookies = req.cookies;
     if (!cookies?.refreshToken) return res.status(401).json({ message: 'Refresh Token required' });

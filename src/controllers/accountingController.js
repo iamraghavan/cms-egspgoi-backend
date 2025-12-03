@@ -7,6 +7,25 @@ const { TABLE_NAME: AD_SPEND_TABLE, schema: adSpendSchema } = require('../models
 
 // --- Payment Records ---
 
+/**
+ * Creates a new payment record.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The request body.
+ * @param {string} req.body.date - The date of the payment.
+ * @param {string} req.body.transfer_by - The name of the person transferring.
+ * @param {string} req.body.payment_id - The payment ID.
+ * @param {string} req.body.payment_method - The payment method.
+ * @param {number} req.body.amount - The amount paid.
+ * @param {string} req.body.from_account - The account paid from.
+ * @param {string} req.body.transaction_id - The transaction ID.
+ * @param {string} req.body.purpose - The purpose of the payment.
+ * @param {string} req.body.remarks - Any remarks.
+ * @param {Object} req.user - The authenticated user.
+ * @param {string} req.user.id - The ID of the user creating the record.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const createPaymentRecord = async (req, res) => {
   const { date, transfer_by, payment_id, payment_method, amount, from_account, transaction_id, purpose, remarks } = req.body;
   const created_by = req.user.id;
@@ -44,6 +63,13 @@ const createPaymentRecord = async (req, res) => {
   }
 };
 
+/**
+ * Retrieves all payment records.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const getPaymentRecords = async (req, res) => {
   try {
     const command = new ScanCommand({ TableName: PAYMENT_TABLE });
@@ -59,6 +85,24 @@ const getPaymentRecords = async (req, res) => {
 
 // --- Ad Spends ---
 
+/**
+ * Creates a new ad spend record.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The request body.
+ * @param {string} req.body.date - The date of the ad spend.
+ * @param {string} req.body.platform - The platform (e.g., Google, Facebook).
+ * @param {number} req.body.budget_allocated - The allocated budget.
+ * @param {number} req.body.actual_spend - The actual spend.
+ * @param {string} req.body.invoice_no - The invoice number.
+ * @param {string} req.body.invoice_url - The invoice URL.
+ * @param {string} req.body.remarks - Any remarks.
+ * @param {string} req.body.campaign_id - The associated campaign ID.
+ * @param {Object} req.user - The authenticated user.
+ * @param {string} req.user.id - The ID of the user creating the record.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const createAdSpend = async (req, res) => {
   const { date, platform, budget_allocated, actual_spend, invoice_no, invoice_url, remarks, campaign_id } = req.body;
   const created_by = req.user.id;
@@ -95,6 +139,13 @@ const createAdSpend = async (req, res) => {
   }
 };
 
+/**
+ * Retrieves all ad spend records.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const getAdSpends = async (req, res) => {
   try {
     const command = new ScanCommand({ TableName: AD_SPEND_TABLE });

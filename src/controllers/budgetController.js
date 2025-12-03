@@ -4,7 +4,16 @@ const { docClient } = require('../config/db');
 const { PutCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const { BUDGET_TABLE_NAME, PROOF_TABLE_NAME } = require('../models/budgetModel');
 
-// Create a budget request
+/**
+ * Creates a budget request.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The request body.
+ * @param {string} req.body.campaign_id - The ID of the campaign.
+ * @param {number} req.body.amount - The budget amount.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const createBudget = async (req, res) => {
   const { campaign_id, amount } = req.body;
 
@@ -31,7 +40,19 @@ const createBudget = async (req, res) => {
   }
 };
 
-// Approve or Reject budget (Finance)
+/**
+ * Approves or rejects a budget (Finance).
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.params - The route parameters.
+ * @param {string} req.params.id - The ID of the budget.
+ * @param {Object} req.body - The request body.
+ * @param {string} req.body.status - The new status (approved, rejected).
+ * @param {Object} req.user - The authenticated user.
+ * @param {string} req.user.id - The ID of the user approving the budget.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const approveBudget = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body; // approved, rejected
@@ -58,7 +79,19 @@ const approveBudget = async (req, res) => {
   }
 };
 
-// Upload Payment Proof
+/**
+ * Uploads a payment proof.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The request body.
+ * @param {string} req.body.budget_id - The ID of the budget.
+ * @param {string} req.body.transaction_ref - The transaction reference.
+ * @param {string} req.body.proof_url - The URL of the proof.
+ * @param {Object} req.user - The authenticated user.
+ * @param {string} req.user.id - The ID of the user uploading the proof.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const uploadProof = async (req, res) => {
   const { budget_id, transaction_ref, proof_url } = req.body;
   const uploaded_by = req.user.id;
@@ -89,7 +122,19 @@ const uploadProof = async (req, res) => {
   }
 };
 
-// Verify Payment Proof (Finance)
+/**
+ * Verifies a payment proof (Finance).
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.params - The route parameters.
+ * @param {string} req.params.id - The ID of the proof.
+ * @param {Object} req.body - The request body.
+ * @param {string} req.body.status - The new status (verified, rejected).
+ * @param {Object} req.user - The authenticated user.
+ * @param {string} req.user.id - The ID of the user verifying the proof.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const verifyProof = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body; // verified, rejected

@@ -14,6 +14,19 @@ const smartfloController = {
 
   // --- Call Operations ---
 
+  /**
+   * Initiates a click-to-call operation.
+   *
+   * @param {Object} req - The request object.
+   * @param {Object} req.body - The request body.
+   * @param {string} req.body.destination_number - The destination phone number.
+   * @param {string} [req.body.caller_id] - The caller ID to display.
+   * @param {Object} req.user - The authenticated user.
+   * @param {string} req.user.id - The ID of the user initiating the call.
+   * @param {Object} res - The response object.
+   * @param {Function} next - The next middleware function.
+   * @returns {void}
+   */
   clickToCall: async (req, res, next) => {
     // Validation Schema
     const schema = Joi.object({
@@ -54,6 +67,15 @@ const smartfloController = {
     }
   },
 
+  /**
+   * Retrieves live calls.
+   *
+   * @param {Object} req - The request object.
+   * @param {Object} req.query - The query parameters.
+   * @param {Object} res - The response object.
+   * @param {Function} next - The next middleware function.
+   * @returns {void}
+   */
   getLiveCalls: async (req, res, next) => {
     try {
       const filters = req.query;
@@ -67,6 +89,15 @@ const smartfloController = {
     }
   },
 
+  /**
+   * Retrieves call records.
+   *
+   * @param {Object} req - The request object.
+   * @param {Object} req.query - The query parameters.
+   * @param {Object} res - The response object.
+   * @param {Function} next - The next middleware function.
+   * @returns {void}
+   */
   getCallRecords: async (req, res, next) => {
     try {
       const params = req.query;
@@ -78,6 +109,21 @@ const smartfloController = {
     }
   },
 
+  /**
+   * Performs a call operation (Monitor, Whisper, Barge, Transfer).
+   *
+   * @param {Object} req - The request object.
+   * @param {Object} req.body - The request body.
+   * @param {number} req.body.type - The operation type (1: Monitor, 2: Whisper, 3: Barge, 4: Transfer).
+   * @param {string} req.body.call_id - The ID of the call.
+   * @param {string} [req.body.agent_id] - The agent ID (for transfer).
+   * @param {string} [req.body.intercom] - The intercom (for transfer).
+   * @param {Object} req.user - The authenticated user.
+   * @param {string} req.user.id - The ID of the user performing the operation.
+   * @param {Object} res - The response object.
+   * @param {Function} next - The next middleware function.
+   * @returns {void}
+   */
   callOperation: async (req, res, next) => {
     const schema = Joi.object({
         type: Joi.number().valid(1, 2, 3, 4).required(), // 1: Monitor, 2: Whisper, 3: Barge, 4: Transfer
@@ -101,6 +147,17 @@ const smartfloController = {
     }
   },
 
+  /**
+   * Hangs up a call.
+   *
+   * @param {Object} req - The request object.
+   * @param {Object} req.body - The request body.
+   * @param {string} req.body.call_id - The ID of the call to hang up.
+   * @param {Object} req.user - The authenticated user.
+   * @param {Object} res - The response object.
+   * @param {Function} next - The next middleware function.
+   * @returns {void}
+   */
   hangupCall: async (req, res, next) => {
     const schema = Joi.object({
         call_id: Joi.string().required()
@@ -122,6 +179,14 @@ const smartfloController = {
 
   // --- User Management (Smartflo Users) ---
 
+  /**
+   * Retrieves Smartflo users.
+   *
+   * @param {Object} req - The request object.
+   * @param {Object} res - The response object.
+   * @param {Function} next - The next middleware function.
+   * @returns {void}
+   */
   getSmartfloUsers: async (req, res, next) => {
     try {
       const result = await smartfloService.getUsers();

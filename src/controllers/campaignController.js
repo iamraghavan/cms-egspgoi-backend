@@ -2,7 +2,30 @@ const { getISTTimestamp, parseISTTimestamp } = require('../utils/timeUtils');
 const { docClient } = require('../config/db');
 const { PutCommand, ScanCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const { TABLE_NAME: CAMPAIGNS_TABLE } = require('../models/campaignModel');
+const { v4: uuidv4 } = require('uuid');
 
+/**
+ * Creates a new campaign.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The body of the request.
+ * @param {string} req.body.name - The name of the campaign.
+ * @param {string} [req.body.description] - The description of the campaign.
+ * @param {string} req.body.type - The type of campaign.
+ * @param {string} req.body.platform - The platform for the campaign.
+ * @param {string} req.body.start_date - The start date of the campaign.
+ * @param {string} req.body.end_date - The end date of the campaign.
+ * @param {Object} [req.body.target_audience] - Target audience details.
+ * @param {Object} [req.body.settings] - Campaign settings.
+ * @param {string} req.body.institution - The institution name.
+ * @param {string} req.body.objective - The objective of the campaign.
+ * @param {string} req.body.kpi - The KPI for the campaign.
+ * @param {Object} [req.body.detailed_plan] - The detailed plan.
+ * @param {Object} req.user - The authenticated user.
+ * @param {string} req.user.id - The ID of the user creating the campaign.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const createCampaign = async (req, res) => {
   const { name, description, type, platform, start_date, end_date, target_audience, settings, institution, objective, kpi, detailed_plan } = req.body;
   const created_by = req.user.id;
@@ -42,6 +65,13 @@ const createCampaign = async (req, res) => {
   }
 };
 
+/**
+ * Retrieves all campaigns.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const getCampaigns = async (req, res) => {
   try {
     const command = new ScanCommand({
@@ -57,6 +87,17 @@ const getCampaigns = async (req, res) => {
   }
 };
 
+/**
+ * Updates the status of a campaign.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.params - The route parameters.
+ * @param {string} req.params.id - The ID of the campaign to update.
+ * @param {Object} req.body - The request body.
+ * @param {string} req.body.status - The new status.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const updateCampaignStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;

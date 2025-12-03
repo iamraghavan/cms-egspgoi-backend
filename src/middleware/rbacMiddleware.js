@@ -2,6 +2,12 @@ const { docClient } = require('../config/db');
 const { GetCommand } = require("@aws-sdk/lib-dynamodb");
 const { TABLE_NAME: ROLES_TABLE } = require('../models/roleModel');
 
+/**
+ * Middleware to check if the user has the required permission.
+ *
+ * @param {string} requiredPermission - The permission required to access the route.
+ * @returns {Function} Express middleware function.
+ */
 const checkPermission = (requiredPermission) => {
   return async (req, res, next) => {
     try {
