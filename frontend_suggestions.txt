@@ -1,0 +1,77 @@
+# Frontend Application Suggestions for Admissions CRM
+
+Based on the backend architecture, here are the recommended modules and features for the Frontend Application (e.g., Next.js/React).
+
+## 1. Authentication Module
+- **Login Page**: Secure login with Email/Password.
+- **Role-Based Redirection**: Redirect users to their specific dashboard upon login (e.g., Admin -> Admin Dashboard, Finance -> Finance Dashboard).
+- **Profile Management**: View and edit user profile details.
+
+## 2. Dashboard Module (Role-Based)
+- **Super Admin Dashboard**: Overview of all system stats (Users, Active Campaigns, Total Leads, Budget Utilized).
+- **Marketing Dashboard**: Active Campaigns, Ad Spend vs. Budget, Lead Generation Stats.
+- **Finance Dashboard**: Pending Budget Approvals, Total Funds Received vs. Spent.
+- **Admission Dashboard**: Lead Pipeline Summary, Today's Follow-ups, Call Stats.
+
+## 3. User Management (Super Admin Only)
+- **User List**: Table view of all users with status and roles.
+- **Create User Modal/Page**: Form to add new users (Marketing Manager, Finance, etc.) by selecting their Role.
+- **Role Management**: (Optional) View permissions per role.
+
+## 4. Campaign Management (Marketing Manager)
+- **Campaign List**: Kanban board or Table view of campaigns by status (Draft, Active, Completed).
+- **Create Campaign Wizard**: A multi-step form to capture:
+    - Basic Info (Name, Type, Dates).
+    - Institution & Objectives (College, KPI, Target Audience).
+    - Detailed Plan (Channel-wise strategy for Google, Meta, Offline).
+- **Campaign Details View**: A comprehensive view showing:
+    - Campaign Overview.
+    - Associated Budgets.
+    - Uploaded Assets.
+    - Ad Spends & Performance.
+
+## 5. Finance & Accounting Module (Finance Team)
+- **Budget Approval Queue**: List of budgets requested by Marketing. Actions: Approve/Reject.
+- **Payment Records Ledger**: Interface to log incoming funds (NEFT, UPI) with Transaction IDs.
+- **Ad Spend Tracker**: View daily ad spends logged by Marketing.
+- **Proof Verification**: View and verify payment proofs uploaded for budgets.
+
+## 6. Asset Management (Designers/Editors)
+- **Asset Gallery**: Grid view of creative assets (Images, Videos).
+- **My Assets Filter**: Toggle to show only assets uploaded by the logged-in user.
+- **Upload Interface**: Drag-and-drop area to upload campaign creatives with versioning support.
+- **Asset Details**: View full-size asset and metadata.
+
+## 7. Lead Management CRM (Admission Team)
+- **Lead Table**: High-performance table with filters for:
+    - College, Course, State, District.
+    - Admission Year, Source.
+    - Assigned User.
+- **Lead Details View**:
+    - Student Profile.
+    - Activity Timeline.
+    - **Click-to-Call**: Integrated button to trigger calls via Tata Smartflo.
+- **Manual Lead Entry**: Form to add walk-in or tele-calling leads.
+
+## 8. Public Admission Form (External)
+- **Secure Submission**: A public-facing landing page or embeddable form for students.
+- **Fields**: Name, Phone, Email, College, Course, State, District.
+- **UTM Tracking**: Hidden fields to capture UTM parameters from URLs.
+- **Uniqueness Check**: Frontend validation to handle "Lead already exists" responses gracefully.
+
+## 9. Settings & Integrations
+- **API Key Management**: Admin interface to generate/revoke keys for external integrations.
+- **Integration Status**: View status of SendGrid and Smartflo connections.
+
+## 10. Smartflo IVR Integration
+- **Click-to-Call (C2C)**:
+    - **Quick Dial**: Add a phone icon next to every phone number in the Lead Table and Lead Details view.
+    - **Call Status**: Show a toast notification ("Initiating Call...") and handle the async response.
+- **Live Call Monitoring (Admission Manager)**:
+    - **Live Dashboard**: A real-time view of active calls with Agent Name, Customer Number, and Duration.
+    - **Controls**: Action buttons for Monitor (Listen), Whisper (Coach), Barge (Join), and Transfer.
+- **Call Records (CDR)**:
+    - **Call History Tab**: A dedicated tab in Lead Details showing past calls with recordings (audio player).
+    - **Team Logs**: A report view for Managers to see call volume, duration, and outcomes per agent.
+- **Agent Mapping**:
+    - **User Profile**: Add a field in the User Edit form to input/select the `Smartflo Agent ID`.

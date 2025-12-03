@@ -1,0 +1,28 @@
+const Joi = require('joi');
+
+const TABLE_NAME = "Leads";
+
+const leadSchema = Joi.object({
+  id: Joi.string().uuid(),
+  name: Joi.string().required(),
+  phone: Joi.string().pattern(/^[0-9]+$/).required(),
+  email: Joi.string().email().allow(null, ''),
+  college: Joi.string().allow(null, ''),
+  course: Joi.string().allow(null, ''),
+  state: Joi.string().allow(null, ''),
+  district: Joi.string().allow(null, ''),
+  admission_year: Joi.string().required(), // e.g., "2025"
+  source_website: Joi.string().required(), // e.g., "example.com"
+  utm_params: Joi.object().default({}),
+  form_data: Joi.object().default({}), // Catch-all for other form fields
+  pipeline_id: Joi.string().uuid().allow(null),
+  assigned_to: Joi.string().uuid().allow(null), // Can be null for auto-assignment later
+  status: Joi.string().default('new'),
+  created_at: Joi.string(),
+  updated_at: Joi.string()
+});
+
+module.exports = {
+  TABLE_NAME,
+  schema: leadSchema
+};
