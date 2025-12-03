@@ -4,6 +4,21 @@ const { docClient } = require('../config/db');
 const { PutCommand, ScanCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const { TABLE_NAME: ASSETS_TABLE } = require('../models/assetModel');
 
+/**
+ * Uploads a new asset.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The request body.
+ * @param {string} req.body.campaign_id - The ID of the campaign.
+ * @param {string} req.body.name - The name of the asset.
+ * @param {string} req.body.storage_url - The URL where the asset is stored.
+ * @param {string} req.body.file_type - The type of the file.
+ * @param {number} [req.body.version] - The version of the asset.
+ * @param {Object} req.user - The authenticated user.
+ * @param {string} req.user.id - The ID of the user uploading the asset.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const uploadAsset = async (req, res) => {
   const { campaign_id, name, storage_url, file_type, version } = req.body;
   const uploaded_by = req.user.id;
@@ -36,6 +51,18 @@ const uploadAsset = async (req, res) => {
   }
 };
 
+/**
+ * Retrieves assets based on filters.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.query - The query parameters.
+ * @param {string} [req.query.campaign_id] - Filter by campaign ID.
+ * @param {string} [req.query.my_assets] - Filter by assets uploaded by the current user.
+ * @param {Object} req.user - The authenticated user.
+ * @param {string} req.user.id - The ID of the current user.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const getAssets = async (req, res) => {
   const { campaign_id, my_assets } = req.query;
 
@@ -73,6 +100,17 @@ const getAssets = async (req, res) => {
   }
 };
 
+/**
+ * Updates the status of an asset.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.params - The route parameters.
+ * @param {string} req.params.id - The ID of the asset.
+ * @param {Object} req.body - The request body.
+ * @param {string} req.body.status - The new status (e.g., 'review', 'approved').
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 const updateAssetStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body; // review, approved

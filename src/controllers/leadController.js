@@ -7,7 +7,14 @@ const logger = require('../utils/logger');
 const Joi = require('joi');
 const { getISTTimestamp, parseISTTimestamp } = require('../utils/timeUtils');
 
-// Helper to check for existing lead using GSI
+/**
+ * Helper to check for existing lead using GSI.
+ *
+ * @param {string} phone - The phone number.
+ * @param {string} admission_year - The admission year.
+ * @param {string} source_website - The source website.
+ * @returns {Promise<Object|null>} The existing lead or null.
+ */
 const findExistingLead = async (phone, admission_year, source_website) => {
     try {
         // Optimization: Use GSI 'PhoneIndex' for O(1) lookup instead of Scan
@@ -45,6 +52,28 @@ const findExistingLead = async (phone, admission_year, source_website) => {
     }
 };
 
+/**
+ * Creates a new lead (Internal Admin API).
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The request body.
+ * @param {string} req.body.name - The lead name.
+ * @param {string} req.body.phone - The lead phone.
+ * @param {string} req.body.email - The lead email.
+ * @param {string} req.body.pipeline_id - The pipeline ID.
+ * @param {string} req.body.college - The college name.
+ * @param {string} req.body.course - The course name.
+ * @param {string} req.body.state - The state.
+ * @param {string} req.body.district - The district.
+ * @param {string} [req.body.admission_year] - The admission year.
+ * @param {string} [req.body.source_website] - The source website.
+ * @param {Object} [req.body.utm_params] - UTM parameters.
+ * @param {Object} req.user - The authenticated user.
+ * @param {string} req.user.id - The ID of the user creating the lead.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ * @returns {void}
+ */
 const createLead = async (req, res, next) => {
   // Internal Admin API
   const { name, phone, email, pipeline_id, college, course, state, district, admission_year, source_website, utm_params } = req.body;
@@ -91,6 +120,27 @@ const createLead = async (req, res, next) => {
   }
 };
 
+/**
+ * Submits a lead (Secure Public/External API).
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.body - The request body.
+ * @param {string} req.body.name - The lead name.
+ * @param {string} req.body.email - The lead email.
+ * @param {string} req.body.phone - The lead phone.
+ * @param {string} req.body.admission_year - The admission year.
+ * @param {string} req.body.source_website - The source website.
+ * @param {string} [req.body.college] - The college name.
+ * @param {string} [req.body.course] - The course name.
+ * @param {string} [req.body.state] - The state.
+ * @param {string} [req.body.district] - The district.
+ * @param {string} [req.body.utm_source] - UTM Source.
+ * @param {string} [req.body.utm_medium] - UTM Medium.
+ * @param {string} [req.body.utm_campaign] - UTM Campaign.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ * @returns {void}
+ */
 const submitLead = async (req, res, next) => {
     // Secure Public/External API
     const { 
@@ -178,6 +228,15 @@ const submitLead = async (req, res, next) => {
     }
 };
 
+/**
+ * Retrieves leads.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.user - The authenticated user.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ * @returns {void}
+ */
 const getLeads = async (req, res, next) => {
   try {
     let command;
@@ -204,6 +263,18 @@ const getLeads = async (req, res, next) => {
   }
 };
 
+/**
+ * Initiates a call for a lead.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} req.params - The route parameters.
+ * @param {string} req.params.id - The ID of the lead.
+ * @param {Object} req.body - The request body.
+ * @param {string} [req.body.agent_number] - The agent's number.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ * @returns {void}
+ */
 const initiateCall = async (req, res, next) => {
   const { id } = req.params;
   // Security: Validate agent number from user profile, don't trust body blindly if possible
