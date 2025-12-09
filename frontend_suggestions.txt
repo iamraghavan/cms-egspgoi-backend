@@ -1,77 +1,162 @@
-# Frontend Application Suggestions for Admissions CRM
+# Frontend Architecture & Implementation Suggestions for Admissions CRM
 
-Based on the backend architecture, here are the recommended modules and features for the Frontend Application (e.g., Next.js/React).
+## 1. Technology Stack Recommendations
 
-## 1. Authentication Module
-- **Login Page**: Secure login with Email/Password.
-- **Role-Based Redirection**: Redirect users to their specific dashboard upon login (e.g., Admin -> Admin Dashboard, Finance -> Finance Dashboard).
-- **Profile Management**: View and edit user profile details.
+To build a robust, scalable, and "vibe coding" friendly frontend that matches your backend's capabilities, I recommend the following stack:
 
-## 2. Dashboard Module (Role-Based)
-- **Super Admin Dashboard**: Overview of all system stats (Users, Active Campaigns, Total Leads, Budget Utilized).
-- **Marketing Dashboard**: Active Campaigns, Ad Spend vs. Budget, Lead Generation Stats.
-- **Finance Dashboard**: Pending Budget Approvals, Total Funds Received vs. Spent.
-- **Admission Dashboard**: Lead Pipeline Summary, Today's Follow-ups, Call Stats.
+*   **Framework**: **Next.js 14+ (App Router)** - For server-side rendering, SEO (important for public lead forms), and robust routing.
+*   **Language**: **TypeScript** - Essential for type safety, especially with the complex data models (Leads, Campaigns, Budgets) defined in your backend.
+*   **Styling**: **Tailwind CSS** + **Shadcn UI** - For rapid, beautiful, and accessible UI development. Shadcn provides copy-paste components that are highly customizable.
+*   **State Management**: **Zustand** - Lightweight and easier to manage than Redux for global state (User Auth, Sidebar state).
+*   **Data Fetching**: **TanStack Query (React Query)** - Critical for managing server state, caching, and background updates (e.g., live call monitoring).
+*   **Forms**: **React Hook Form** + **Zod** - For efficient form handling and validation that mirrors your backend Joi schemas.
+*   **Icons**: **Lucide React** - Clean, modern icons.
 
-## 3. User Management (Super Admin Only)
-- **User List**: Table view of all users with status and roles.
-- **Create User Modal/Page**: Form to add new users (Marketing Manager, Finance, etc.) by selecting their Role.
-- **Role Management**: (Optional) View permissions per role.
+---
 
-## 4. Campaign Management (Marketing Manager)
-- **Campaign List**: Kanban board or Table view of campaigns by status (Draft, Active, Completed).
-- **Create Campaign Wizard**: A multi-step form to capture:
-    - Basic Info (Name, Type, Dates).
-    - Institution & Objectives (College, KPI, Target Audience).
-    - Detailed Plan (Channel-wise strategy for Google, Meta, Offline).
-- **Campaign Details View**: A comprehensive view showing:
-    - Campaign Overview.
-    - Associated Budgets.
-    - Uploaded Assets.
-    - Ad Spends & Performance.
+## 2. Project Structure (Next.js App Router)
 
-## 5. Finance & Accounting Module (Finance Team)
-- **Budget Approval Queue**: List of budgets requested by Marketing. Actions: Approve/Reject.
-- **Payment Records Ledger**: Interface to log incoming funds (NEFT, UPI) with Transaction IDs.
-- **Ad Spend Tracker**: View daily ad spends logged by Marketing.
-- **Proof Verification**: View and verify payment proofs uploaded for budgets.
+```
+/app
+  /(auth)
+    /login/page.tsx          # Login Screen
+    /register/page.tsx       # (Optional) Register Screen
+  /(dashboard)               # Protected Layout with Sidebar/Header
+    /layout.tsx              # Auth Check & Sidebar Provider
+    /page.tsx                # Main Dashboard (Widgets based on Role)
+    /leads/
+      /page.tsx              # Leads Kanban/List View
+      /[id]/page.tsx         # Lead Details & History
+    /campaigns/
+      /page.tsx              # Campaign List & Status Toggle
+      /create/page.tsx       # Multi-step Campaign Wizard
+      /[id]/page.tsx         # Campaign Details & Asset Manager
+    /budgets/
+      /page.tsx              # Budget Requests & Approvals
+    /accounting/
+      /page.tsx              # Payment Records & Ad Spends
+    /telephony/
+      /page.tsx              # Smartflo Dialer & Live Calls
+    /users/
+      /page.tsx              # Admin User Management
+  /submit-lead/page.tsx      # Public Lead Submission Form (No Auth)
+/components
+  /ui                        # Shadcn UI Components
+  /forms                     # Reusable Form Components
+  /tables                    # Data Tables (TanStack Table)
+  /telephony                 # Dialer & Call Controls
+/lib
+  /api.ts                    # Axios Instance with Interceptors (Auth/Refresh)
+  /utils.ts                  # Helper functions (Date formatting)
+/hooks                       # Custom Hooks (useAuth, useLeads, useSmartflo)
+```
 
-## 6. Asset Management (Designers/Editors)
-- **Asset Gallery**: Grid view of creative assets (Images, Videos).
-- **My Assets Filter**: Toggle to show only assets uploaded by the logged-in user.
-- **Upload Interface**: Drag-and-drop area to upload campaign creatives with versioning support.
-- **Asset Details**: View full-size asset and metadata.
+---
 
-## 7. Lead Management CRM (Admission Team)
-- **Lead Table**: High-performance table with filters for:
-    - College, Course, State, District.
-    - Admission Year, Source.
-    - Assigned User.
-- **Lead Details View**:
-    - Student Profile.
-    - Activity Timeline.
-    - **Click-to-Call**: Integrated button to trigger calls via Tata Smartflo.
-- **Manual Lead Entry**: Form to add walk-in or tele-calling leads.
+## 3. Authentication Flow
 
-## 8. Public Admission Form (External)
-- **Secure Submission**: A public-facing landing page or embeddable form for students.
-- **Fields**: Name, Phone, Email, College, Course, State, District.
-- **UTM Tracking**: Hidden fields to capture UTM parameters from URLs.
-- **Uniqueness Check**: Frontend validation to handle "Lead already exists" responses gracefully.
+1.  **Login**:
+    *   **UI**: Email & Password fields.
+    *   **Action**: POST `/api/v1/auth/login`
+    *   **Handling**: Store `accessToken` in memory/Zustand. The `refreshToken` is automatically handled via HTTP-Only cookie.
+    *   **Redirect**: To `/dashboard` upon success.
 
-## 9. Settings & Integrations
-- **API Key Management**: Admin interface to generate/revoke keys for external integrations.
-- **Integration Status**: View status of SendGrid and Smartflo connections.
+2.  **Token Refresh (Axios Interceptor)**:
+    *   On 401 response, interceptor calls POST `/api/v1/auth/refresh`.
+    *   If success, retry original request with new token.
+    *   If fail, redirect to `/login`.
 
-## 10. Smartflo IVR Integration
-- **Click-to-Call (C2C)**:
-    - **Quick Dial**: Add a phone icon next to every phone number in the Lead Table and Lead Details view.
-    - **Call Status**: Show a toast notification ("Initiating Call...") and handle the async response.
-- **Live Call Monitoring (Admission Manager)**:
-    - **Live Dashboard**: A real-time view of active calls with Agent Name, Customer Number, and Duration.
-    - **Controls**: Action buttons for Monitor (Listen), Whisper (Coach), Barge (Join), and Transfer.
-- **Call Records (CDR)**:
-    - **Call History Tab**: A dedicated tab in Lead Details showing past calls with recordings (audio player).
-    - **Team Logs**: A report view for Managers to see call volume, duration, and outcomes per agent.
-- **Agent Mapping**:
-    - **User Profile**: Add a field in the User Edit form to input/select the `Smartflo Agent ID`.
+3.  **Role-Based Protection**:
+    *   Create a `RoleGuard` component or Higher-Order Component (HOC) to wrap pages.
+    *   Check `user.role` against required permissions before rendering.
+
+---
+
+## 4. Detailed Page & Feature Breakdown by Role
+
+### A. Dashboard (`/`)
+*   **Super Admin**: System health, User stats, Total Revenue/Spend.
+*   **Marketing Manager**: Active Campaigns, Budget Usage, Lead Generation Stats.
+*   **Admission Manager**: Live Call Status, Lead Pipeline Summary, Agent Performance.
+*   **Finance**: Pending Budget Approvals, Recent Transactions.
+
+### B. Leads Module (`/leads`)
+*   **View**:
+    *   **Kanban Board**: Columns for statuses (New, Contacted, Interested, Enrolled).
+    *   **Data Table**: Sortable/Filterable list.
+*   **Features**:
+    *   **Click-to-Call**: Button next to phone number. Triggers POST `/api/v1/smartflo/click-to-call`.
+    *   **Filters**: By Source, Status, Assigned Agent.
+*   **Permissions**:
+    *   `Admission Manager`: View All.
+    *   `Admission Executive`: View Assigned Only.
+
+### C. Campaigns Module (`/campaigns`)
+*   **UI**: Grid view of campaigns with status badges (Draft, Active, Completed).
+*   **Actions**:
+    *   **Create**: Form for Name, Date Range, Budget, Platform. (POST `/api/v1/campaigns`)
+    *   **Status Toggle**: Switch to Activate/Pause. (PATCH `/api/v1/campaigns/:id/status`)
+    *   **Asset Manager**: Upload creatives. (POST `/api/v1/assets`)
+*   **Permissions**: `Marketing Manager` (Full Access), `Designer` (Upload Assets).
+
+### D. Budgets & Approvals (`/budgets`)
+*   **UI**: Split view - "My Requests" vs "Pending Approvals".
+*   **Workflow**:
+    1.  **Marketing** creates request (POST `/api/v1/budgets`).
+    2.  **Finance** sees request in "Pending" list.
+    3.  **Finance** clicks Approve/Reject (PATCH `/api/v1/budgets/:id/approve`).
+    4.  **Marketing** uploads Proof (POST `/api/v1/proofs`).
+    5.  **Finance** verifies Proof (PATCH `/api/v1/proofs/:id/verify`).
+
+### E. Accounting (`/accounting`)
+*   **Tabs**:
+    1.  **Payment Records**: Table of all incoming payments. (GET/POST `/api/v1/accounting/payments`)
+    2.  **Ad Spends**: Tracker for daily ad spend per platform. (GET/POST `/api/v1/accounting/ad-spends`)
+*   **Permissions**: `Finance` (Payments), `Marketing Manager` (Ad Spends).
+
+### F. Telephony / Smartflo (`/telephony`)
+*   **Live Monitor (Manager Only)**:
+    *   List of active calls.
+    *   **Actions**: Listen (Monitor), Whisper (Coach), Barge (Join), Hangup.
+    *   **API**: GET `/api/v1/smartflo/live-calls`, POST `/api/v1/smartflo/call-operation`.
+*   **Call History**:
+    *   Table of past calls with Recording playback.
+    *   **API**: GET `/api/v1/smartflo/call-records`.
+
+---
+
+## 5. API Integration Reference
+
+Use this mapping to wire up your frontend components.
+
+| Feature | Action | Method | Endpoint | Required Role/Permission |
+| :--- | :--- | :--- | :--- | :--- |
+| **Auth** | Login | `POST` | `/api/v1/auth/login` | Public |
+| | Refresh Token | `POST` | `/api/v1/auth/refresh` | Public (Cookie) |
+| | Get Profile | `GET` | `/api/v1/auth/profile` | Auth User |
+| **Users** | List Users | `GET` | `/api/v1/users` | Super Admin |
+| | Create User | `POST` | `/api/v1/users` | Super Admin |
+| **Campaigns** | List Campaigns | `GET` | `/api/v1/campaigns` | Auth User |
+| | Create Campaign | `POST` | `/api/v1/campaigns` | Marketing Manager |
+| | Update Status | `PATCH` | `/api/v1/campaigns/:id/status` | Marketing Manager |
+| **Assets** | Upload Asset | `POST` | `/api/v1/assets` | Designer, Editor |
+| | List Assets | `GET` | `/api/v1/assets` | Auth User |
+| **Budgets** | Request Budget | `POST` | `/api/v1/budgets` | Marketing Manager |
+| | Approve Budget | `PATCH` | `/api/v1/budgets/:id/approve` | Finance |
+| | Upload Proof | `POST` | `/api/v1/proofs` | Auth User |
+| | Verify Proof | `PATCH` | `/api/v1/proofs/:id/verify` | Finance |
+| **Leads** | Public Submit | `POST` | `/api/v1/leads/submit` | Public |
+| | Create Lead | `POST` | `/api/v1/leads` | Auth User |
+| | List Leads | `GET` | `/api/v1/leads` | Auth User (Scoped) |
+| | Initiate Call | `POST` | `/api/v1/leads/:id/call` | Admission Exec/Manager |
+| **Accounting** | Add Payment | `POST` | `/api/v1/accounting/payments` | Finance |
+| | Add Ad Spend | `POST` | `/api/v1/accounting/ad-spends` | Marketing Manager |
+| **Smartflo** | Click-to-Call | `POST` | `/api/v1/smartflo/click-to-call` | Admission Exec/Manager |
+| | Live Calls | `GET` | `/api/v1/smartflo/live-calls` | Admission Manager |
+| | Call Records | `GET` | `/api/v1/smartflo/call-records` | Auth User (Scoped) |
+| | Monitor/Barge | `POST` | `/api/v1/smartflo/call-operation` | Admission Manager |
+| **Analytics** | Admin Stats | `GET` | `/api/v1/analytics/admin` | Super Admin |
+| | Marketing Stats | `GET` | `/api/v1/analytics/marketing` | Marketing Manager |
+| | Admission Stats | `GET` | `/api/v1/analytics/admission` | Admission Manager |
+| | Finance Stats | `GET` | `/api/v1/analytics/finance` | Finance |
+| | Executive Stats | `GET` | `/api/v1/analytics/executive` | Admission Executive |

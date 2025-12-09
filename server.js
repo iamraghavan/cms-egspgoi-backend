@@ -34,6 +34,7 @@ app.use('/api/v1', require('./src/routes/campaignRoutes'));
 app.use('/api/v1', require('./src/routes/leadRoutes'));
 app.use('/api/v1', require('./src/routes/accountingRoutes'));
 app.use('/api/v1/smartflo', require('./src/routes/smartfloRoutes'));
+app.use('/api/v1/analytics', require('./src/routes/analyticsRoutes'));
 
 // Error Handler
 app.use(errorHandler);
