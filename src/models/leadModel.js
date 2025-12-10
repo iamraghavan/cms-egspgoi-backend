@@ -17,6 +17,14 @@ const leadSchema = Joi.object({
   form_data: Joi.object().default({}), // Catch-all for other form fields
   pipeline_id: Joi.string().uuid().allow(null),
   assigned_to: Joi.string().uuid().allow(null), // Can be null for auto-assignment later
+  notes: Joi.array().items(
+    Joi.object({
+        content: Joi.string().required(),
+        author_id: Joi.string().required(),
+        author_name: Joi.string().optional(),
+        created_at: Joi.string().required()
+    })
+  ).default([]),
   status: Joi.string().default('new'),
   created_at: Joi.string(),
   updated_at: Joi.string()

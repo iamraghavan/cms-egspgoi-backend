@@ -148,7 +148,9 @@ Use this mapping to wire up your frontend components.
 | **Leads** | Public Submit | `POST` | `/api/v1/leads/submit` | Public |
 | | Create Lead | `POST` | `/api/v1/leads` | Auth User |
 | | List Leads | `GET` | `/api/v1/leads` | Auth User (Scoped) |
-| | Initiate Call | `POST` | `/api/v1/leads/:id/call` | Admission Exec/Manager |
+| | Initiate Call | `POST` | `/api/v1/leads/:id/call` | Admin/Manager/Exec |
+| | Add Note | `POST` | `/api/v1/leads/:id/notes` | Auth User |
+| | Transfer Lead | `POST` | `/api/v1/leads/:id/transfer` | Admin/Manager |
 | **Accounting** | Add Payment | `POST` | `/api/v1/accounting/payments` | Finance |
 | | Add Ad Spend | `POST` | `/api/v1/accounting/ad-spends` | Marketing Manager |
 | **Smartflo** | Click-to-Call | `POST` | `/api/v1/smartflo/click-to-call` | Admission Exec/Manager |

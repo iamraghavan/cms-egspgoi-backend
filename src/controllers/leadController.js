@@ -233,4 +233,81 @@ const initiateCall = async (req, res, next) => {
   }
 };
 
-module.exports = { createLead, getLeads, initiateCall, submitLead };
+const addNote = async (req, res, next) => {
+    const { id } = req.params;
+    const { content } = req.body;
+    const author_id = req.user.id;
+    const author_name = req.user.name || 'Unknown';
+
+    if (!content) {
+        return res.status(400).json({ message: 'Note content is required' });
+    }
+
+    try {
+        // Fetch current lead to get existing notes
+        const getCommand = new GetCommand({
+            TableName: LEADS_TABLE,
+            Key: { id }
+        });
+        const leadResult = await docClient.send(getCommand);
+        
+        if (!leadResult.Item) {
+            return res.status(404).json({ message: 'Lead not found' });
+        }
+
+        const currentNotes = leadResult.Item.notes || [];
+        const newNote = {
+            content,
+            author_id,
+            author_name,
+            created_at: getISTTimestamp()
+        };
+
+        const updatedNotes = [...currentNotes, newNote];
+
+        const updateCommand = new PutCommand({
+            TableName: LEADS_TABLE,
+            Item: { ...leadResult.Item, notes: updatedNotes, updated_at: getISTTimestamp() }
+        });
+
+        await docClient.send(updateCommand);
+        res.json({ message: 'Note added successfully', note: newNote });
+    } catch (error) {
+        logger.error('Add Note Error:', error);
+        next(error);
+    }
+};
+
+const transferLead = async (req, res, next) => {
+    const { id } = req.params;
+    const { new_agent_id } = req.body;
+
+    if (!new_agent_id) {
+        return res.status(400).json({ message: 'New Agent ID is required' });
+    }
+
+    try {
+        const getCommand = new GetCommand({
+            TableName: LEADS_TABLE,
+            Key: { id }
+        });
+        const leadResult = await docClient.send(getCommand);
+        
+        if (!leadResult.Item) {
+            return res.status(404).json({ message: 'Lead not found' });
+        }
+
+        const updateCommand = new PutCommand({
+            TableName: LEADS_TABLE,
+            Item: { ...leadResult.Item, assigned_to: new_agent_id, updated_at: getISTTimestamp() }
+        });
+
+        await docClient.send(updateCommand);
+        res.json({ message: 'Lead transferred successfully' });
+    } catch (error) {
+        logger.error('Transfer Lead Error:', error);
+        next(error);
+    }
+};
+
+module.exports = { createLead, getLeads, initiateCall, submitLead, addNote, transferLead };
