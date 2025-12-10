@@ -51,7 +51,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"John Doe\",\n    \"phone\": \"9876543210\",\n    \"email\": \"john@example.com\",\n    \"pipeline_id\": \"{{pipeline_id}}\"\n}",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"phone\": \"9876543210\",\n    \"email\": \"john@example.com\",\n    \"college\": \"EGS Pillay Engineering College\",\n    \"course\": \"B.E CSE\",\n    \"pipeline_id\": \"{{pipeline_id}}\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
