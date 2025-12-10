@@ -160,3 +160,6 @@ Use this mapping to wire up your frontend components.
 | | Admission Stats | `GET` | `/api/v1/analytics/admission` | Admission Manager |
 | | Finance Stats | `GET` | `/api/v1/analytics/finance` | Finance |
 | | Executive Stats | `GET` | `/api/v1/analytics/executive` | Admission Executive |
+| **Search** | Global Search | `GET` | `/api/v1/search?q=...` | Auth User (Scoped) |
+
+> **Note on Search**: Implement **Debouncing** (wait 300-500ms after user stops typing) on the frontend search input to prevent excessive API calls.
