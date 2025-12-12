@@ -4,11 +4,12 @@ const TABLE_NAME = "Leads";
 
 const leadSchema = Joi.object({
   id: Joi.string().uuid(),
+  lead_reference_id: Joi.string().required(), // Custom ID: egsp-admission-YYYYMMDD-XXXXXX
   name: Joi.string().required(),
   phone: Joi.string().pattern(/^[0-9]+$/).required(),
   email: Joi.string().email().allow(null, ''),
-  college: Joi.string().allow(null, ''),
-  course: Joi.string().allow(null, ''),
+  college: Joi.string().required(), // Mandatory for internal creation
+  course: Joi.string().required(), // Mandatory for internal creation
   state: Joi.string().allow(null, ''),
   district: Joi.string().allow(null, ''),
   admission_year: Joi.string().required(), // e.g., "2025"

@@ -5,7 +5,9 @@ const { triggerCall } = require('../services/smartfloService');
 const { TABLE_NAME: LEADS_TABLE, schema: leadSchema } = require('../models/leadModel');
 const logger = require('../utils/logger');
 const Joi = require('joi');
+const Joi = require('joi');
 const { getISTTimestamp, parseISTTimestamp } = require('../utils/timeUtils');
+const { generateLeadRef } = require('../utils/idGenerator');
 
 // Helper to check for existing lead using GSI
 const findExistingLead = async (phone, admission_year, source_website) => {
@@ -51,9 +53,13 @@ const createLead = async (req, res, next) => {
   const assigned_to = req.user.id; 
 
   try {
+  try {
     const id = uuidv4();
+    const lead_reference_id = generateLeadRef();
+
     const newLead = {
       id,
+      lead_reference_id,
       name,
       phone,
       email,
@@ -134,8 +140,11 @@ const submitLead = async (req, res, next) => {
 
         // 2. Create New Lead
         const id = uuidv4();
+        const lead_reference_id = generateLeadRef();
+
         const newLead = {
             id,
+            lead_reference_id,
             name,
             email,
             phone,
