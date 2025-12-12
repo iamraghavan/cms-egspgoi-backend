@@ -51,6 +51,8 @@ const findExistingLead = async (phone, admission_year, source_website) => {
 const createLead = async (req, res, next) => {
   // Internal Admin API
   const { name, phone, email, pipeline_id, college, course, state, district, admission_year, source_website, utm_params } = req.body;
+  
+  try {
     // Auto-Assignment Logic
     let assigned_to = req.user.id; 
     
@@ -61,6 +63,9 @@ const createLead = async (req, res, next) => {
     } else {
         logger.warn('No available agents for auto-assignment. Assigning to creator.');
     }
+
+    const id = uuidv4();
+    const lead_reference_id = generateLeadRef();
 
     const newLead = {
       id,
