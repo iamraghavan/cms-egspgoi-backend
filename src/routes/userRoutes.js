@@ -1,6 +1,7 @@
+```javascript
 const express = require('express');
 const router = express.Router();
-const { register, login, getProfile, getAllUsers, createUser, refreshToken } = require('../controllers/userController');
+const { register, login, getProfile, getUsers, createUser, refreshToken, toggleAvailability } = require('../controllers/userController');
 const { authenticate } = require('../middleware/authMiddleware');
 const { checkPermission } = require('../middleware/rbacMiddleware');
 
@@ -10,8 +11,11 @@ router.post('/login', login);
 router.post('/refresh', refreshToken);
 
 // Protected routes
-router.get('/profile', authenticate, getProfile);
-router.get('/', authenticate, checkPermission('all'), getAllUsers); // Only Super Admin (with 'all' permission)
+router.get('/auth/profile', authenticate, getProfile);
+router.post('/auth/refresh', refreshToken);
+router.patch('/auth/availability', authenticate, toggleAvailability);
+router.get('/', authenticate, checkPermission('all'), getUsers); // Only Super Admin (with 'all' permission)
 router.post('/', authenticate, checkPermission('all'), createUser); // Only Super Admin
 
 module.exports = router;
+```

@@ -1,12 +1,14 @@
 const { v4: uuidv4 } = require('uuid');
 const { docClient } = require('../config/db');
-const { PutCommand, ScanCommand, GetCommand, QueryCommand } = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, ScanCommand, GetCommand, QueryCommand, TransactWriteItemsCommand } = require("@aws-sdk/lib-dynamodb");
 const { triggerCall } = require('../services/smartfloService');
 const { TABLE_NAME: LEADS_TABLE, schema: leadSchema } = require('../models/leadModel');
+const { TABLE_NAME: USERS_TABLE } = require('../models/userModel');
 const logger = require('../utils/logger');
 const Joi = require('joi');
 const { getISTTimestamp, parseISTTimestamp } = require('../utils/timeUtils');
 const { generateLeadRef } = require('../utils/idGenerator');
+const { findBestAgent } = require('../services/assignmentService');
 
 // Helper to check for existing lead using GSI
 const findExistingLead = async (phone, admission_year, source_website) => {
@@ -49,11 +51,21 @@ const findExistingLead = async (phone, admission_year, source_website) => {
 const createLead = async (req, res, next) => {
   // Internal Admin API
   const { name, phone, email, pipeline_id, college, course, state, district, admission_year, source_website, utm_params } = req.body;
-  const assigned_to = req.user.id; 
-
-  try {
-    const id = uuidv4();
-    const lead_reference_id = generateLeadRef();
+    // Auto-Assignment Logic
+    let assigned_to = req.user.id; // Default to creator if not auto-assigned (or null logic)
+    // Actually, for "Internal Create", usually the creator keeps it OR assigns it.
+    // If the user wants auto-assignment even for internal creation, we can do it.
+    // Let's assume Internal Creation = Assigned to Self (Creator) UNLESS specified otherwise.
+    // BUT, the prompt asked for "when new leads created internally or externally... automatically assign".
+    // So we will override the creator's ID with the algorithm's choice.
+    
+    const bestAgent = await findBestAgent();
+    if (bestAgent) {
+        assigned_to = bestAgent.id;
+        logger.info(`Auto-assigning internal lead to: ${bestAgent.name} (${bestAgent.id})`);
+    } else {
+        logger.warn('No available agents for auto-assignment. Assigning to creator.');
+    }
 
     const newLead = {
       id,
@@ -81,9 +93,33 @@ const createLead = async (req, res, next) => {
         return res.status(400).json({ message: error.details[0].message });
     }
 
-    const command = new PutCommand({
-      TableName: LEADS_TABLE,
-      Item: newLead
+    // Transaction: Create Lead + Update Agent Stats
+    const transactItems = [
+        {
+            Put: {
+                TableName: LEADS_TABLE,
+                Item: newLead
+            }
+        }
+    ];
+
+    if (bestAgent) {
+        transactItems.push({
+            Update: {
+                TableName: USERS_TABLE,
+                Key: { id: bestAgent.id },
+                UpdateExpression: "SET active_leads_count = if_not_exists(active_leads_count, :zero) + :inc, last_assigned_at = :now",
+                ExpressionAttributeValues: {
+                    ":inc": 1,
+                    ":zero": 0,
+                    ":now": getISTTimestamp()
+                }
+            }
+        });
+    }
+
+    const command = new TransactWriteItemsCommand({
+        TransactItems: transactItems
     });
 
     await docClient.send(command);
@@ -136,7 +172,17 @@ const submitLead = async (req, res, next) => {
             return res.status(200).json({ message: 'Lead already exists.', lead_id: existingLead.id });
         }
 
-        // 2. Create New Lead
+        // 2. Auto-Assignment
+        let assigned_to = null;
+        const bestAgent = await findBestAgent();
+        if (bestAgent) {
+            assigned_to = bestAgent.id;
+            logger.info(`Auto-assigning public lead to: ${bestAgent.name} (${bestAgent.id})`);
+        } else {
+            logger.warn('No available agents for public lead auto-assignment.');
+        }
+
+        // 3. Create New Lead
         const id = uuidv4();
         const lead_reference_id = generateLeadRef();
 
@@ -158,7 +204,7 @@ const submitLead = async (req, res, next) => {
                 campaign: utm_campaign
             },
             form_data: otherDetails, 
-            assigned_to: null, 
+            assigned_to, 
             status: 'new',
             created_at: getISTTimestamp()
         };
@@ -170,9 +216,33 @@ const submitLead = async (req, res, next) => {
              return res.status(400).json({ message: 'Invalid lead data format.' });
         }
 
-        const command = new PutCommand({
-            TableName: LEADS_TABLE,
-            Item: newLead
+        // Transaction: Create Lead + Update Agent Stats
+        const transactItems = [
+            {
+                Put: {
+                    TableName: LEADS_TABLE,
+                    Item: newLead
+                }
+            }
+        ];
+
+        if (bestAgent) {
+            transactItems.push({
+                Update: {
+                    TableName: USERS_TABLE,
+                    Key: { id: bestAgent.id },
+                    UpdateExpression: "SET active_leads_count = if_not_exists(active_leads_count, :zero) + :inc, last_assigned_at = :now",
+                    ExpressionAttributeValues: {
+                        ":inc": 1,
+                        ":zero": 0,
+                        ":now": getISTTimestamp()
+                    }
+                }
+            });
+        }
+
+        const command = new TransactWriteItemsCommand({
+            TransactItems: transactItems
         });
 
         await docClient.send(command);

@@ -126,21 +126,6 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
 ---
 
 ## 5. API Integration Reference
-
-Use this mapping to wire up your frontend components.
-
-| Feature | Action | Method | Endpoint | Required Role/Permission |
-| :--- | :--- | :--- | :--- | :--- |
-| **Auth** | Login | `POST` | `/api/v1/auth/login` | Public |
-| | Refresh Token | `POST` | `/api/v1/auth/refresh` | Public (Cookie) |
-| | Get Profile | `GET` | `/api/v1/auth/profile` | Auth User |
-| **Users** | List Users | `GET` | `/api/v1/users` | Super Admin |
-| | Create User | `POST` | `/api/v1/users` | Super Admin |
-| **Campaigns** | List Campaigns | `GET` | `/api/v1/campaigns` | Auth User |
-| | Create Campaign | `POST` | `/api/v1/campaigns` | Marketing Manager |
-| | Update Status | `PATCH` | `/api/v1/campaigns/:id/status` | Marketing Manager |
-| **Assets** | Upload Asset | `POST` | `/api/v1/assets` | Designer, Editor |
-| | List Assets | `GET` | `/api/v1/assets` | Auth User |
 | **Budgets** | Request Budget | `POST` | `/api/v1/budgets` | Marketing Manager |
 | | Approve Budget | `PATCH` | `/api/v1/budgets/:id/approve` | Finance |
 | | Upload Proof | `POST` | `/api/v1/proofs` | Auth User |
