@@ -317,4 +317,36 @@ const transferLead = async (req, res, next) => {
     }
 };
 
-module.exports = { createLead, getLeads, initiateCall, submitLead, addNote, transferLead };
+const updateLeadStatus = async (req, res, next) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+        return res.status(400).json({ message: 'Status is required' });
+    }
+
+    try {
+        const getCommand = new GetCommand({
+            TableName: LEADS_TABLE,
+            Key: { id }
+        });
+        const leadResult = await docClient.send(getCommand);
+        
+        if (!leadResult.Item) {
+            return res.status(404).json({ message: 'Lead not found' });
+        }
+
+        const updateCommand = new PutCommand({
+            TableName: LEADS_TABLE,
+            Item: { ...leadResult.Item, status, updated_at: getISTTimestamp() }
+        });
+
+        await docClient.send(updateCommand);
+        res.json({ message: 'Lead status updated successfully', status });
+    } catch (error) {
+        logger.error('Update Lead Status Error:', error);
+        next(error);
+    }
+};
+
+module.exports = { createLead, getLeads, initiateCall, submitLead, addNote, transferLead, updateLeadStatus };

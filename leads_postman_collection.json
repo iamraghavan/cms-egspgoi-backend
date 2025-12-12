@@ -204,6 +204,42 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Update Lead Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"Contacted\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/leads/{{lead_id}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"leads",
+								"{{lead_id}}",
+								"status"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		}

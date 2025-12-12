@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createLead, getLeads, initiateCall, submitLead, addNote, transferLead } = require('../controllers/leadController');
+const { createLead, getLeads, initiateCall, submitLead, addNote, transferLead, updateLeadStatus } = require('../controllers/leadController');
 const { authenticate } = require('../middleware/authMiddleware');
 const { checkPermission } = require('../middleware/rbacMiddleware');
 
@@ -31,5 +31,7 @@ router.post('/leads/:id/transfer', authenticate, (req, res, next) => {
         res.status(403).json({ message: 'Access denied: Only Admins/Managers can transfer leads' });
     }
 }, transferLead);
+
+router.patch('/leads/:id/status', authenticate, updateLeadStatus);
 
 module.exports = router;
