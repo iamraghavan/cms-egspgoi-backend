@@ -36,6 +36,7 @@ app.use('/api/v1', require('./src/routes/accountingRoutes'));
 app.use('/api/v1/smartflo', require('./src/routes/smartfloRoutes'));
 app.use('/api/v1/analytics', require('./src/routes/analyticsRoutes'));
 app.use('/api/v1/search', require('./src/routes/searchRoutes'));
+app.use('/api/v1/leads/bulk', require('./src/routes/bulkLeadRoutes'));
 
 // Error Handler
 app.use(errorHandler);
