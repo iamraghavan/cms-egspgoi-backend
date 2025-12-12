@@ -1,4 +1,3 @@
-```javascript
 const express = require('express');
 const router = express.Router();
 const { register, login, getProfile, getUsers, createUser, refreshToken, toggleAvailability } = require('../controllers/userController');
@@ -18,4 +17,3 @@ router.get('/', authenticate, checkPermission('all'), getUsers); // Only Super A
 router.post('/', authenticate, checkPermission('all'), createUser); // Only Super Admin
 
 module.exports = router;
-```

@@ -13,6 +13,9 @@ const userSchema = Joi.object({
   designation: Joi.string().allow(null, ''),
   status: Joi.string().valid('active', 'inactive', 'suspended').default('active'),
   smartflo_agent_id: Joi.string().allow(null, ''), // ID of the agent in Smartflo system
+  is_available: Joi.boolean().default(true), // For auto-assignment
+  active_leads_count: Joi.number().integer().min(0).default(0), // Load balancing
+  last_assigned_at: Joi.string().allow(null), // Tie-breaker
   metadata: Joi.object().default({}),
   created_at: Joi.string(),
   updated_at: Joi.string()

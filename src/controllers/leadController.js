@@ -52,12 +52,7 @@ const createLead = async (req, res, next) => {
   // Internal Admin API
   const { name, phone, email, pipeline_id, college, course, state, district, admission_year, source_website, utm_params } = req.body;
     // Auto-Assignment Logic
-    let assigned_to = req.user.id; // Default to creator if not auto-assigned (or null logic)
-    // Actually, for "Internal Create", usually the creator keeps it OR assigns it.
-    // If the user wants auto-assignment even for internal creation, we can do it.
-    // Let's assume Internal Creation = Assigned to Self (Creator) UNLESS specified otherwise.
-    // BUT, the prompt asked for "when new leads created internally or externally... automatically assign".
-    // So we will override the creator's ID with the algorithm's choice.
+    let assigned_to = req.user.id; 
     
     const bestAgent = await findBestAgent();
     if (bestAgent) {
