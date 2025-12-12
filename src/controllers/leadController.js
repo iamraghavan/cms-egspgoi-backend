@@ -5,7 +5,6 @@ const { triggerCall } = require('../services/smartfloService');
 const { TABLE_NAME: LEADS_TABLE, schema: leadSchema } = require('../models/leadModel');
 const logger = require('../utils/logger');
 const Joi = require('joi');
-const Joi = require('joi');
 const { getISTTimestamp, parseISTTimestamp } = require('../utils/timeUtils');
 const { generateLeadRef } = require('../utils/idGenerator');
 
@@ -52,7 +51,6 @@ const createLead = async (req, res, next) => {
   const { name, phone, email, pipeline_id, college, course, state, district, admission_year, source_website, utm_params } = req.body;
   const assigned_to = req.user.id; 
 
-  try {
   try {
     const id = uuidv4();
     const lead_reference_id = generateLeadRef();
