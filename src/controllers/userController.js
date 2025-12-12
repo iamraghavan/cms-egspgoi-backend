@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const { getISTTimestamp } = require('../utils/timeUtils');
 const { docClient } = require('../config/db');
-const { PutCommand, QueryCommand, ScanCommand, GetCommand } = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, QueryCommand, ScanCommand, GetCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwtUtils');
 const { TABLE_NAME: USERS_TABLE, schema: userSchema } = require('../models/userModel');
 const { TABLE_NAME: ROLES_TABLE } = require('../models/roleModel');
@@ -147,7 +147,7 @@ const getProfile = async (req, res) => {
   }
 };
 
-const getAllUsers = async (req, res) => {
+const getUsers = async (req, res) => {
   try {
     const command = new ScanCommand({
       TableName: USERS_TABLE,
@@ -275,4 +275,32 @@ const refreshToken = async (req, res) => {
     }
 };
 
-module.exports = { register, login, getProfile, getAllUsers, createUser, refreshToken };
+const toggleAvailability = async (req, res, next) => {
+    const { id } = req.user; // From auth middleware
+    const { is_available } = req.body;
+
+    if (typeof is_available !== 'boolean') {
+        return res.status(400).json({ message: 'is_available must be a boolean' });
+    }
+
+    try {
+        const command = new UpdateCommand({
+            TableName: USERS_TABLE,
+            Key: { id },
+            UpdateExpression: "SET is_available = :status, updated_at = :time",
+            ExpressionAttributeValues: {
+                ":status": is_available,
+                ":time": getISTTimestamp()
+            },
+            ReturnValues: "ALL_NEW"
+        });
+
+        const result = await docClient.send(command);
+        res.json({ message: 'Availability updated', user: result.Attributes });
+    } catch (error) {
+        console.error('Toggle Availability Error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { register, login, getProfile, getUsers, createUser, refreshToken, toggleAvailability };
