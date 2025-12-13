@@ -13,7 +13,119 @@ const handleError = (res, error, context) => {
     res.status(500).json({ message: 'Internal Server Error', error: process.env.NODE_ENV === 'development' ? error.message : undefined });
 };
 
-// ... (omitted code) ...
+// 1. Create Lead (Internal)
+const createLead = async (req, res) => {
+    try {
+        const { name, phone, email, pipeline_id, college, course, state, district, admission_year, source_website, utm_params } = req.body;
+
+        // Normalize Phone
+        const formattedPhone = formatPhoneNumber(phone);
+        if (!formattedPhone) {
+            return res.status(400).json({ message: 'Invalid phone number format.' });
+        }
+
+        // Update body for validation (since Joi expects E.164 now)
+        req.body.phone = formattedPhone;
+
+        // Validate Input
+        const { error } = leadSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ message: error.details[0].message });
+        }
+
+        const leadData = {
+            name, phone: formattedPhone, email, pipeline_id, college, course, state, district,
+            admission_year: admission_year || new Date().getFullYear().toString(),
+            source_website: source_website || 'internal_dashboard',
+            utm_params: utm_params || {}
+        };
+
+        const result = await leadService.createLeadInDB(leadData, true, req.user.id);
+        
+        res.status(201).json(result.lead);
+    } catch (error) {
+        handleError(res, error, 'Create Lead');
+    }
+};
+
+// 2. Submit Lead (Public)
+const submitLead = async (req, res) => {
+    try {
+        // Strict Input Validation for Public API
+        const submissionSchema = Joi.object({
+            phone: Joi.string().required(),
+            admission_year: Joi.string().required(),
+            source_website: Joi.string().required(),
+            name: Joi.string().required(),
+            email: Joi.string().email().optional().allow(''),
+            college: Joi.string().optional(),
+            course: Joi.string().optional(),
+            state: Joi.string().optional(),
+            district: Joi.string().optional(),
+            utm_source: Joi.string().optional(),
+            utm_medium: Joi.string().optional(),
+            utm_campaign: Joi.string().optional()
+        }).unknown(true);
+
+        const { error } = submissionSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ message: error.details[0].message });
+        }
+
+        const { 
+            name, email, phone, college, course, state, district, 
+            admission_year, source_website, 
+            utm_source, utm_medium, utm_campaign,
+            ...otherDetails 
+        } = req.body;
+
+        // Normalize Phone
+        const formattedPhone = formatPhoneNumber(phone);
+        if (!formattedPhone) {
+            return res.status(400).json({ message: 'Invalid phone number format.' });
+        }
+
+        const leadData = {
+            name, email, phone: formattedPhone, college, course, state, district,
+            admission_year, source_website,
+            utm_params: { source: utm_source, medium: utm_medium, campaign: utm_campaign },
+            form_data: otherDetails
+        };
+
+        const result = await leadService.createLeadInDB(leadData, false);
+
+        if (result.isDuplicate) {
+            return res.status(200).json({ message: 'Lead already exists.', lead_id: result.lead.id });
+        }
+
+        res.status(201).json({ message: 'Lead submitted successfully', lead_id: result.lead.id });
+    } catch (error) {
+        handleError(res, error, 'Submit Lead');
+    }
+};
+
+// 3. Get Leads (Paginated)
+const getLeads = async (req, res) => {
+    try {
+        const { limit, lastEvaluatedKey } = req.query;
+        const filter = {};
+
+        // Security: Enforce data scoping
+        if (req.user.role !== 'Super Admin' && req.user.role !== 'Admission Manager') {
+            filter.assigned_to = req.user.id;
+        }
+
+        const result = await leadService.getLeadsFromDB(
+            filter, 
+            parseInt(limit) || 20, 
+            lastEvaluatedKey ? JSON.parse(decodeURIComponent(lastEvaluatedKey)) : null
+        );
+
+        res.json(result);
+    } catch (error) {
+        handleError(res, error, 'Get Leads');
+    }
+};
 
 // 4. Initiate Call
 const initiateCall = async (req, res) => {
