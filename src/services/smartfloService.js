@@ -23,8 +23,13 @@ const smartfloService = {
    */
   login: async () => {
     try {
+      if (process.env.SMARTFLO_API_KEY) {
+        console.log('Using SMARTFLO_API_KEY from env, skipping login.');
+        return process.env.SMARTFLO_API_KEY;
+      }
+
       if (!process.env.SMARTFLO_EMAIL || !process.env.SMARTFLO_PASSWORD) {
-        throw new Error('Smartflo credentials not configured in .env');
+        throw new Error('Smartflo credentials (API Key or Email/Pass) not configured in .env');
       }
 
       const response = await axios.post(`${SMARTFLO_BASE_URL}/auth/login`, {
@@ -55,14 +60,17 @@ const smartfloService = {
   /**
    * Get Valid Access Token (Login or Refresh if needed)
    */
+  /**
+   * Get Valid Access Token
+   */
   getToken: async () => {
+    // 1. Prefer API Key if available
+    if (process.env.SMARTFLO_API_KEY) {
+        return process.env.SMARTFLO_API_KEY;
+    }
+
+    // 2. Fallback to Email/Password Login (Legacy)
     if (!accessToken || !tokenExpiry || Date.now() >= tokenExpiry) {
-      // Token expired or not exists, login again
-      // Note: Could implement refresh token flow, but login is simpler for server-side service 
-      // unless we hit rate limits on login. Docs say "Short-Lived Token... 1-hour valid".
-      // Refresh token is also an option. Let's stick to login for simplicity and robustness 
-      // unless we have the refresh token stored. 
-      // Actually, let's just re-login. It's safer than managing refresh token state across server restarts without DB.
       return await smartfloService.login();
     }
     return accessToken;
@@ -73,10 +81,14 @@ const smartfloService = {
    */
   getHeaders: async () => {
     const token = await smartfloService.getToken();
+    
+    // If using API Key (which is a JWT), it often needs 'Bearer ' prefix too, 
+    // or sometimes just the key depending on provider. 
+    // The user's example showed 'Bearer <API_KEY_JWT>'.
     return {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${token}` 
     };
   },
 
