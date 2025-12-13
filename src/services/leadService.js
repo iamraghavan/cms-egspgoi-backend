@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const { docClient } = require('../config/db');
-const { PutCommand, ScanCommand, GetCommand, QueryCommand, TransactWriteItemsCommand } = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, ScanCommand, GetCommand, QueryCommand, TransactWriteCommand } = require("@aws-sdk/lib-dynamodb");
 const { TABLE_NAME: LEADS_TABLE } = require('../models/leadModel');
 const { TABLE_NAME: USERS_TABLE } = require('../models/userModel');
 const logger = require('../utils/logger');
@@ -120,7 +120,7 @@ const createLeadInDB = async (leadData, isInternal = false, creatorId = null) =>
         });
     }
 
-    await docClient.send(new TransactWriteItemsCommand({ TransactItems: transactItems }));
+    await docClient.send(new TransactWriteCommand({ TransactItems: transactItems }));
     
     return { isDuplicate: false, lead: newLead };
 };

@@ -6,7 +6,7 @@ const leadSchema = Joi.object({
   id: Joi.string().uuid(),
   lead_reference_id: Joi.string().required(), // Custom ID: egsp-admission-YYYYMMDD-XXXXXX
   name: Joi.string().required(),
-  phone: Joi.string().pattern(/^[0-9]+$/).required(),
+  phone: Joi.string().pattern(/^\+[1-9]\d{1,14}$/).required(), // E.164 format validation
   email: Joi.string().email().allow(null, ''),
   college: Joi.string().required(), // Mandatory for internal creation
   course: Joi.string().required(), // Mandatory for internal creation

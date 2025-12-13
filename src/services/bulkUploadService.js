@@ -7,6 +7,7 @@ const { TABLE_NAME: USERS_TABLE } = require('../models/userModel');
 const logger = require('../utils/logger');
 const { getISTTimestamp } = require('../utils/timeUtils');
 const { generateLeadRef } = require('../utils/idGenerator');
+const { formatPhoneNumber } = require('../utils/phoneUtils');
 
 /**
  * Service to handle Bulk Lead Upload
@@ -32,16 +33,16 @@ const normalizeLeads = (rawLeads) => {
             return;
         }
 
-        // Normalize Phone (Remove spaces, dashes)
-        const phone = String(row.Phone).replace(/\D/g, '');
-        if (phone.length < 10) {
+        // Normalize Phone
+        const formattedPhone = formatPhoneNumber(row.Phone);
+        if (!formattedPhone) {
             errors.push({ row: index + 2, message: 'Invalid Phone Number' });
             return;
         }
 
         validLeads.push({
             name: row.Name,
-            phone: phone,
+            phone: formattedPhone,
             email: row.Email || '',
             college: row.College || '',
             course: row.Course || '',

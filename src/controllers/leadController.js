@@ -4,6 +4,7 @@ const Joi = require('joi');
 const { triggerCall } = require('../services/smartfloService');
 const leadService = require('../services/leadService');
 const { getISTTimestamp } = require('../utils/timeUtils');
+const { formatPhoneNumber } = require('../utils/phoneUtils');
 
 // Standardized Error Response
 const handleError = (res, error, context) => {
@@ -14,16 +15,25 @@ const handleError = (res, error, context) => {
 // 1. Create Lead (Internal)
 const createLead = async (req, res) => {
     try {
+        const { name, phone, email, pipeline_id, college, course, state, district, admission_year, source_website, utm_params } = req.body;
+
+        // Normalize Phone
+        const formattedPhone = formatPhoneNumber(phone);
+        if (!formattedPhone) {
+            return res.status(400).json({ message: 'Invalid phone number format.' });
+        }
+
+        // Update body for validation (since Joi expects E.164 now)
+        req.body.phone = formattedPhone;
+
         // Validate Input
         const { error } = leadSchema.validate(req.body);
         if (error) {
             return res.status(400).json({ message: error.details[0].message });
         }
 
-        const { name, phone, email, pipeline_id, college, course, state, district, admission_year, source_website, utm_params } = req.body;
-
         const leadData = {
-            name, phone, email, pipeline_id, college, course, state, district,
+            name, phone: formattedPhone, email, pipeline_id, college, course, state, district,
             admission_year: admission_year || new Date().getFullYear().toString(),
             source_website: source_website || 'internal_dashboard',
             utm_params: utm_params || {}
@@ -68,8 +78,14 @@ const submitLead = async (req, res) => {
             ...otherDetails 
         } = req.body;
 
+        // Normalize Phone
+        const formattedPhone = formatPhoneNumber(phone);
+        if (!formattedPhone) {
+            return res.status(400).json({ message: 'Invalid phone number format.' });
+        }
+
         const leadData = {
-            name, email, phone, college, course, state, district,
+            name, email, phone: formattedPhone, college, course, state, district,
             admission_year, source_website,
             utm_params: { source: utm_source, medium: utm_medium, campaign: utm_campaign },
             form_data: otherDetails
