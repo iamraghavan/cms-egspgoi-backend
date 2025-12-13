@@ -145,10 +145,18 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
 | | Allowed Methods | `OPTIONS` | `/api/v1/leads` | Public |
 | **Accounting** | Add Payment | `POST` | `/api/v1/accounting/payments` | Finance |
 | | Add Ad Spend | `POST` | `/api/v1/accounting/ad-spends` | Marketing Manager |
-| **Smartflo** | Click-to-Call | `POST` | `/api/v1/smartflo/click-to-call` | Admission Exec/Manager |
+| | Add Ad Spend | `POST` | `/api/v1/accounting/ad-spends` | Marketing Manager |
+| **Smartflo** | Click-to-Call | `POST` | `/api/v1/leads/:id/call` | Admin/Manager/Exec |
+| | | | | *Note: `agent_number` is optional if set in User Profile.* |
+| | Webhook | `POST` | `/api/v1/smartflo/webhook` | External (Public) |
 | | Live Calls | `GET` | `/api/v1/smartflo/live-calls` | Admission Manager |
 | | Call Records | `GET` | `/api/v1/smartflo/call-records` | Auth User (Scoped) |
 | | Monitor/Barge | `POST` | `/api/v1/smartflo/call-operation` | Admission Manager |
+
+### G. User Management Updates (`/users`)
+*   **Create/Edit User Form**:
+    *   Add fields for **Smartflo Agent Number** (e.g., `12345`) and **Caller ID** (DID).
+    *   These are crucial for the "Click-to-Call" feature to work seamlessly without manual input every time.
 | **Analytics** | Admin Stats | `GET` | `/api/v1/analytics/admin` | Super Admin |
 | | Marketing Stats | `GET` | `/api/v1/analytics/marketing` | Marketing Manager |
 | | Admission Stats | `GET` | `/api/v1/analytics/admission` | Admission Manager |

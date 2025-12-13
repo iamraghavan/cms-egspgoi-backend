@@ -110,7 +110,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"agent_number\": \"1234567890\"\n}",
+							"raw": "{\n    \"agent_number\": \"OPTIONAL_IF_IN_PROFILE\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -401,6 +401,40 @@
 								"v1",
 								"leads",
 								"{{lead_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Smartflo",
+			"item": [
+				{
+					"name": "Smartflo Webhook",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customer_number\": \"9876543210\",\n    \"agent_number\": \"12345\",\n    \"call_status\": \"answered\",\n    \"duration\": 120\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/smartflo/webhook",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"smartflo",
+								"webhook"
 							]
 						}
 					},
