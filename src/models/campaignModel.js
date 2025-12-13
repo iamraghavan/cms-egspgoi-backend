@@ -18,6 +18,8 @@ const campaignSchema = Joi.object({
   detailed_plan: Joi.object().default({}), // Channel-wise plan
   settings: Joi.object().default({}),
   created_by: Joi.string().uuid().required(),
+  is_deleted: Joi.boolean().default(false),
+  deleted_at: Joi.string().allow(null),
   created_at: Joi.string(),
   updated_at: Joi.string()
 });

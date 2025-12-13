@@ -216,4 +216,82 @@ const updateLeadStatus = async (req, res) => {
     }
 };
 
-module.exports = { createLead, getLeads, initiateCall, submitLead, addNote, transferLead, updateLeadStatus };
+// 8. Delete Lead (Soft/Hard)
+const deleteLead = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { type } = req.query; // 'hard' or 'soft' (default)
+
+        // Security: Only Admin can hard delete
+        if (type === 'hard' && req.user.role !== 'Super Admin') {
+            return res.status(403).json({ message: 'Only Super Admin can perform hard deletes.' });
+        }
+
+        const result = await leadService.deleteLead(id, type);
+        if (!result) return res.status(404).json({ message: 'Lead not found' });
+
+        res.json(result);
+    } catch (error) {
+        handleError(res, error, 'Delete Lead');
+    }
+};
+
+// 9. HEAD Lead (Check Existence)
+const headLead = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const lead = await leadService.getLeadById(id);
+        if (!lead || lead.is_deleted) {
+            return res.status(404).end();
+        }
+        res.status(200).end();
+    } catch (error) {
+        res.status(500).end();
+    }
+};
+
+// 10. OPTIONS Lead (Allowed Methods)
+const optionsLead = (req, res) => {
+    res.set('Allow', 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS');
+    res.status(204).end();
+};
+
+// 11. PUT Lead (Full Update)
+const putLead = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedLead = await leadService.updateLeadInDB(id, req.body);
+        if (!updatedLead) return res.status(404).json({ message: 'Lead not found' });
+
+        res.json(updatedLead);
+    } catch (error) {
+        handleError(res, error, 'Put Lead');
+    }
+};
+
+const getLeadNotes = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const lead = await leadService.getLeadById(id);
+        if (!lead) return res.status(404).json({ message: 'Lead not found' });
+
+        res.json(lead.notes || []);
+    } catch (error) {
+        handleError(res, error, 'Get Lead Notes');
+    }
+};
+
+module.exports = { 
+    createLead, 
+    getLeads, 
+    initiateCall, 
+    submitLead, 
+    addNote, 
+    getLeadNotes,
+    transferLead, 
+    updateLeadStatus,
+    deleteLead,
+    headLead,
+    optionsLead,
+    putLead
+};

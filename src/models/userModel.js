@@ -17,6 +17,8 @@ const userSchema = Joi.object({
   active_leads_count: Joi.number().integer().min(0).default(0), // Load balancing
   last_assigned_at: Joi.string().allow(null), // Tie-breaker
   metadata: Joi.object().default({}),
+  is_deleted: Joi.boolean().default(false),
+  deleted_at: Joi.string().allow(null),
   created_at: Joi.string(),
   updated_at: Joi.string()
 });

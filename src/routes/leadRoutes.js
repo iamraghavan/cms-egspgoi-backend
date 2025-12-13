@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createLead, getLeads, initiateCall, submitLead, addNote, transferLead, updateLeadStatus } = require('../controllers/leadController');
+const { createLead, getLeads, initiateCall, submitLead, addNote, getLeadNotes, transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead } = require('../controllers/leadController');
 const { authenticate } = require('../middleware/authMiddleware');
 const { checkPermission } = require('../middleware/rbacMiddleware');
 
@@ -23,7 +23,8 @@ router.post('/leads/:id/call', authenticate, (req, res, next) => {
     }
 }, initiateCall);
 
-router.post('/leads/:id/notes', authenticate, addNote); // Any auth user can add note? Or restricted?
+router.post('/leads/:id/notes', authenticate, addNote); 
+router.get('/leads/:id/notes', authenticate, getLeadNotes);
 router.post('/leads/:id/transfer', authenticate, (req, res, next) => {
      if (req.user.role === 'Super Admin' || req.user.role === 'Admission Manager') {
         next();
@@ -33,5 +34,11 @@ router.post('/leads/:id/transfer', authenticate, (req, res, next) => {
 }, transferLead);
 
 router.patch('/leads/:id/status', authenticate, updateLeadStatus);
+
+// Standardized Methods
+router.delete('/leads/:id', authenticate, deleteLead);
+router.head('/leads/:id', authenticate, headLead);
+router.options('/leads', optionsLead);
+router.put('/leads/:id', authenticate, putLead);
 
 module.exports = router;

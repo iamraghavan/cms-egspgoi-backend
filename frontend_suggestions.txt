@@ -138,6 +138,11 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
 | | Add Note | `POST` | `/api/v1/leads/:id/notes` | Auth User |
 | | Transfer Lead | `POST` | `/api/v1/leads/:id/transfer` | Admin/Manager |
 | | Update Status | `PATCH` | `/api/v1/leads/:id/status` | Auth User |
+| | Get Notes | `GET` | `/api/v1/leads/:id/notes` | Auth User |
+| | Delete Lead | `DELETE` | `/api/v1/leads/:id` | Admin (Hard), User (Soft) |
+| | Full Update | `PUT` | `/api/v1/leads/:id` | Auth User |
+| | Check Existence | `HEAD` | `/api/v1/leads/:id` | Auth User |
+| | Allowed Methods | `OPTIONS` | `/api/v1/leads` | Public |
 | **Accounting** | Add Payment | `POST` | `/api/v1/accounting/payments` | Finance |
 | | Add Ad Spend | `POST` | `/api/v1/accounting/ad-spends` | Marketing Manager |
 | **Smartflo** | Click-to-Call | `POST` | `/api/v1/smartflo/click-to-call` | Admission Exec/Manager |

@@ -27,6 +27,8 @@ const leadSchema = Joi.object({
     })
   ).default([]),
   status: Joi.string().default('new'),
+  is_deleted: Joi.boolean().default(false),
+  deleted_at: Joi.string().allow(null),
   created_at: Joi.string(),
   updated_at: Joi.string()
 });

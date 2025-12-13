@@ -1,12 +1,13 @@
 const { v4: uuidv4 } = require('uuid');
 const { docClient } = require('../config/db');
-const { PutCommand, ScanCommand, GetCommand, QueryCommand, TransactWriteCommand } = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, ScanCommand, GetCommand, QueryCommand, TransactWriteCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
 const { TABLE_NAME: LEADS_TABLE } = require('../models/leadModel');
 const { TABLE_NAME: USERS_TABLE } = require('../models/userModel');
 const logger = require('../utils/logger');
 const { getISTTimestamp, parseISTTimestamp } = require('../utils/timeUtils');
 const { generateLeadRef } = require('../utils/idGenerator');
 const { findBestAgent } = require('./assignmentService');
+const { getUserNamesMap } = require('../utils/userHelper');
 
 /**
  * Service to handle Lead Business Logic and DB Operations
@@ -141,10 +142,17 @@ const getLeadsFromDB = async (filter = {}, limit = 20, lastEvaluatedKey = null) 
     }
 
     // Apply Filter (e.g., assigned_to)
+    // Also filter out deleted items by default
+    let filterExpression = "is_deleted <> :true";
+    let expressionAttributeValues = { ":true": true };
+
     if (filter.assigned_to) {
-        params.FilterExpression = "assigned_to = :assigned_to";
-        params.ExpressionAttributeValues = { ":assigned_to": filter.assigned_to };
+        filterExpression += " AND assigned_to = :assigned_to";
+        expressionAttributeValues[":assigned_to"] = filter.assigned_to;
     }
+
+    params.FilterExpression = filterExpression;
+    params.ExpressionAttributeValues = expressionAttributeValues;
 
     const command = new ScanCommand(params);
     const result = await docClient.send(command);
@@ -154,8 +162,18 @@ const getLeadsFromDB = async (filter = {}, limit = 20, lastEvaluatedKey = null) 
     const items = result.Items || [];
     items.sort((a, b) => parseISTTimestamp(b.created_at) - parseISTTimestamp(a.created_at));
 
+    // Enrich with User Names
+    const userIds = items.map(t => t.assigned_to).concat(items.map(t => t.created_by));
+    const userMap = await getUserNamesMap(userIds);
+
+    const enrichedItems = items.map(item => ({
+        ...item,
+        assigned_to_name: userMap[item.assigned_to] || null,
+        created_by_name: userMap[item.created_by] || null
+    }));
+
     return {
-        items,
+        items: enrichedItems,
         lastEvaluatedKey: result.LastEvaluatedKey
     };
 };
@@ -218,10 +236,37 @@ const updateLeadInDB = async (id, updateData) => {
     return updatedLead;
 };
 
+const deleteLead = async (id, type = 'soft') => {
+    if (type === 'hard') {
+        const command = new DeleteCommand({
+            TableName: LEADS_TABLE,
+            Key: { id }
+        });
+        await docClient.send(command);
+        return { message: 'Lead permanently deleted' };
+    } else {
+        // Soft Delete
+        const lead = await getLeadById(id);
+        if (!lead) return null;
+
+        const command = new PutCommand({
+            TableName: LEADS_TABLE,
+            Item: {
+                ...lead,
+                is_deleted: true,
+                deleted_at: getISTTimestamp()
+            }
+        });
+        await docClient.send(command);
+        return { message: 'Lead soft deleted' };
+    }
+};
+
 module.exports = {
     findExistingLead,
     createLeadInDB,
     getLeadsFromDB,
     getLeadById,
-    updateLeadInDB
+    updateLeadInDB,
+    deleteLead
 };

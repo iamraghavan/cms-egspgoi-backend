@@ -240,6 +240,171 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get Lead Notes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/leads/{{lead_id}}/notes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"leads",
+								"{{lead_id}}",
+								"notes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Lead (Soft)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/leads/{{lead_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"leads",
+								"{{lead_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Lead (Hard)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/leads/{{lead_id}}?type=hard",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"leads",
+								"{{lead_id}}"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "hard"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Head Lead",
+					"request": {
+						"method": "HEAD",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/leads/{{lead_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"leads",
+								"{{lead_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Options Lead",
+					"request": {
+						"method": "OPTIONS",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/leads",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"leads"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Put Lead (Full Update)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe Updated\",\n    \"phone\": \"+919876543210\",\n    \"email\": \"john@example.com\",\n    \"college\": \"EGS Pillay Engineering College\",\n    \"course\": \"B.E CSE\",\n    \"admission_year\": \"2025\",\n    \"source_website\": \"internal\",\n    \"status\": \"new\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/leads/{{lead_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"leads",
+								"{{lead_id}}"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		}
