@@ -7,7 +7,7 @@ const { TABLE_NAME: USERS_TABLE, schema: userSchema } = require('../models/userM
 const { TABLE_NAME: ROLES_TABLE } = require('../models/roleModel');
 
 const register = async (req, res) => {
-  const { name, email, password, role_id, team_id, phone, designation, status, metadata } = req.body;
+  const { name, email, password, role_id, team_id, phone, designation, agent_number, caller_id, status, metadata } = req.body;
 
   try {
     // Check if user exists
@@ -37,6 +37,8 @@ const register = async (req, res) => {
       team_id,
       phone,
       designation,
+      agent_number, // Smartflo Agent Number
+      caller_id,    // Smartflo Caller ID
       status: status || 'active',
       metadata: metadata || {},
       created_at: getISTTimestamp(),
@@ -117,7 +119,9 @@ const login = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: roleName
+        role: roleName,
+        agent_number: user.agent_number,
+        caller_id: user.caller_id
       }
     });
   } catch (error) {
@@ -164,7 +168,7 @@ const getUsers = async (req, res) => {
 };
 
 const createUser = async (req, res) => {
-  const { name, email, password, role, team_id, phone, designation, status, metadata } = req.body;
+  const { name, email, password, role, team_id, phone, designation, agent_number, caller_id, status, metadata } = req.body;
 
   try {
     // Check if user exists
@@ -211,6 +215,8 @@ const createUser = async (req, res) => {
       team_id,
       phone,
       designation,
+      agent_number, // Smartflo Agent Number
+      caller_id,    // Smartflo Caller ID
       status: status || 'active',
       metadata: metadata || {},
       created_at: getISTTimestamp(),

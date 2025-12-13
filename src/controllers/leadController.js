@@ -132,14 +132,15 @@ const initiateCall = async (req, res) => {
     try {
         const { id } = req.params;
         // Security: Prefer agent number from user profile
-        const agentNumber = req.user.smartflo_agent_id || req.body.agent_number;
+        const agentNumber = req.user.agent_number || req.body.agent_number;
 
         if (!agentNumber) {
             return res.status(400).json({ message: 'Agent number not found in profile or request.' });
         }
 
         // Caller ID is optional in Smartflo (uses pilot number if omitted)
-        const callerId = process.env.SMARTFLO_CALLER_ID || null;
+        // Prefer User's tailored Caller ID, then global env, then null
+        const callerId = req.user.caller_id || process.env.SMARTFLO_CALLER_ID || null;
 
         const lead = await leadService.getLeadById(id);
         if (!lead) {
