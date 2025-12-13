@@ -5,6 +5,7 @@ const { triggerCall } = require('../services/smartfloService');
 const leadService = require('../services/leadService');
 const { getISTTimestamp } = require('../utils/timeUtils');
 const { formatPhoneNumber } = require('../utils/phoneUtils');
+const { getUserNamesMap } = require('../utils/userHelper');
 
 // Standardized Error Response
 const handleError = (res, error, context) => {
@@ -275,7 +276,19 @@ const getLeadNotes = async (req, res) => {
         const lead = await leadService.getLeadById(id);
         if (!lead) return res.status(404).json({ message: 'Lead not found' });
 
-        res.json(lead.notes || []);
+        const notes = lead.notes || [];
+        if (notes.length === 0) return res.json([]);
+
+        // Enrich with Author Names
+        const authorIds = notes.map(n => n.author_id);
+        const userMap = await getUserNamesMap(authorIds);
+
+        const enrichedNotes = notes.map(note => ({
+            ...note,
+            author_name: userMap[note.author_id] || 'Unknown' 
+        }));
+
+        res.json(enrichedNotes);
     } catch (error) {
         handleError(res, error, 'Get Lead Notes');
     }
