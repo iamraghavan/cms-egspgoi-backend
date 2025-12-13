@@ -164,4 +164,26 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
 | | Executive Stats | `GET` | `/api/v1/analytics/executive` | Admission Executive |
 | **Search** | Global Search | `GET` | `/api/v1/search?q=...` | Auth User (Scoped) |
 
-> **Note on Search**: Implement **Debouncing** (wait 300-500ms after user stops typing) on the frontend search input to prevent excessive API calls.
+
+### H. API Response & Pagination Standard
+*   **Standard Response Format**:
+    ```json
+    {
+      "success": true,
+      "message": "Operation successful",
+      "data": { ... }, // Payload
+      "meta": {        // Optional metadata (pagination)
+        "cursor": "base64string",
+        "count": 20
+      }
+    }
+    ```
+*   **Pagination Implementation**:
+    *   API uses **Cursor-based pagination** (better for DynamoDB scalability).
+    *   **Request**: `GET /api/v1/leads?limit=20&cursor=...`
+    *   **Implementation**:
+        *   On first load, send `limit=20`.
+        *   Store `meta.cursor` from response.
+        *   "Load More" button sends `cursor={meta.cursor}`.
+    *   **TanStack Query**: Use `useInfiniteQuery` to handle this automatically using the `getNextPageParam` option.
+

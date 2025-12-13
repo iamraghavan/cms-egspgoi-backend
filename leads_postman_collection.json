@@ -84,7 +84,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/leads",
+							"raw": "{{base_url}}/api/v1/leads?limit=20&cursor=",
 							"host": [
 								"{{base_url}}"
 							],
@@ -92,6 +92,17 @@
 								"api",
 								"v1",
 								"leads"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "cursor",
+									"value": "",
+									"description": "Base64 encoded cursor from previous response meta"
+								}
 							]
 						}
 					},
