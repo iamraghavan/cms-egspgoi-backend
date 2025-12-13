@@ -88,7 +88,7 @@ const smartfloService = {
     return {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}` 
+      'Authorization': token // User instructions imply raw key is expected
     };
   },
 
