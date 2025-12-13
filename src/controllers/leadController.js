@@ -7,11 +7,7 @@ const { getISTTimestamp } = require('../utils/timeUtils');
 const { formatPhoneNumber, getNationalNumber } = require('../utils/phoneUtils');
 const { getUserNamesMap } = require('../utils/userHelper');
 
-// Standardized Error Response
-const handleError = (res, error, context) => {
-    logger.error(`${context} Error:`, error);
-    res.status(500).json({ message: 'Internal Server Error', error: process.env.NODE_ENV === 'development' ? error.message : undefined });
-};
+const { sendSuccess, sendError } = require('../utils/responseUtils');
 
 // 1. Create Lead (Internal)
 const createLead = async (req, res) => {
@@ -107,7 +103,17 @@ const submitLead = async (req, res) => {
 // 3. Get Leads (Paginated)
 const getLeads = async (req, res) => {
     try {
-        const { limit, lastEvaluatedKey } = req.query;
+        const { limit, cursor } = req.query;
+        
+        // Joi Validation for Query Params
+        const schema = Joi.object({
+            limit: Joi.number().integer().min(1).max(100).default(20),
+            cursor: Joi.string().optional()
+        });
+        
+        const { error, value } = schema.validate({ limit, cursor });
+        if (error) return sendError(res, error, 'Validation', 400);
+
         const filter = {};
 
         // Security: Enforce data scoping
@@ -117,13 +123,16 @@ const getLeads = async (req, res) => {
 
         const result = await leadService.getLeadsFromDB(
             filter, 
-            parseInt(limit) || 20, 
-            lastEvaluatedKey ? JSON.parse(decodeURIComponent(lastEvaluatedKey)) : null
+            value.limit,
+            value.cursor
         );
 
-        res.json(result);
+        sendSuccess(res, result.items, 'Leads fetched successfully', 200, { 
+            cursor: result.cursor,
+            count: result.count 
+        });
     } catch (error) {
-        handleError(res, error, 'Get Leads');
+        sendError(res, error, 'Get Leads');
     }
 };
 

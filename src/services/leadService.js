@@ -127,22 +127,23 @@ const createLeadInDB = async (leadData, isInternal = false, creatorId = null) =>
 };
 
 // Get Leads with Pagination
-const getLeadsFromDB = async (filter = {}, limit = 20, lastEvaluatedKey = null) => {
-    // Basic Scan with Pagination
-    // In a real high-scale app, we should use Query on Indexes (e.g., by Status, by Agent)
-    // For now, we Scan with Limit
-    
+// Get Leads with Pagination (Cursor-based)
+const getLeadsFromDB = async (filter = {}, limit = 20, cursor = null) => {
     const params = {
         TableName: LEADS_TABLE,
         Limit: limit
     };
 
-    if (lastEvaluatedKey) {
-        params.ExclusiveStartKey = lastEvaluatedKey;
+    if (cursor) {
+        try {
+            params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, 'base64').toString('utf-8'));
+        } catch (e) {
+            logger.warn('Invalid cursor format', e);
+            // Optionally throw error or ignore cursor
+        }
     }
 
     // Apply Filter (e.g., assigned_to)
-    // Also filter out deleted items by default
     let filterExpression = "is_deleted <> :true";
     let expressionAttributeValues = { ":true": true };
 
@@ -157,9 +158,10 @@ const getLeadsFromDB = async (filter = {}, limit = 20, lastEvaluatedKey = null) 
     const command = new ScanCommand(params);
     const result = await docClient.send(command);
 
-    // Sort in memory for the current page (Best effort without GSI)
-    // Note: Global sorting requires GSI
     const items = result.Items || [];
+    
+    // Sort items of the *current page* (DynamoDB Scan doesn't sort)
+    // For true global sort, we need Query on GSI.
     items.sort((a, b) => parseISTTimestamp(b.created_at) - parseISTTimestamp(a.created_at));
 
     // Enrich with User Names
@@ -172,9 +174,15 @@ const getLeadsFromDB = async (filter = {}, limit = 20, lastEvaluatedKey = null) 
         created_by_name: userMap[item.created_by] || null
     }));
 
+    // Encode Next Cursor
+    const nextCursor = result.LastEvaluatedKey 
+        ? Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString('base64') 
+        : null;
+
     return {
         items: enrichedItems,
-        lastEvaluatedKey: result.LastEvaluatedKey
+        cursor: nextCursor,
+        count: enrichedItems.length
     };
 };
 
