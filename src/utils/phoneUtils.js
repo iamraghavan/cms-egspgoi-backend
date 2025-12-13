@@ -24,4 +24,20 @@ const formatPhoneNumber = (phone, defaultCountry = 'IN') => {
     }
 };
 
-module.exports = { formatPhoneNumber };
+const getNationalNumber = (phone, defaultCountry = 'IN') => {
+    try {
+        if (!phone) return null;
+        
+        const phoneNumber = parsePhoneNumber(String(phone), defaultCountry);
+        
+        if (phoneNumber && phoneNumber.isValid()) {
+            return phoneNumber.nationalNumber;
+        }
+        
+        return null;
+    } catch (error) {
+        return null;
+    }
+};
+
+module.exports = { formatPhoneNumber, getNationalNumber };

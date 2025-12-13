@@ -4,7 +4,7 @@ const Joi = require('joi');
 const { clickToCall } = require('../services/smartfloService');
 const leadService = require('../services/leadService');
 const { getISTTimestamp } = require('../utils/timeUtils');
-const { formatPhoneNumber } = require('../utils/phoneUtils');
+const { formatPhoneNumber, getNationalNumber } = require('../utils/phoneUtils');
 const { getUserNamesMap } = require('../utils/userHelper');
 
 // Standardized Error Response
@@ -148,8 +148,14 @@ const initiateCall = async (req, res) => {
             return res.status(404).json({ message: 'Lead not found' });
         }
 
-        logger.info(`Initiating call for Lead ${id} to ${lead.phone} by Agent ${agentNumber}`);
-        await clickToCall(agentNumber, lead.phone, callerId);
+        // Format to 10-digit National Number (remove +91)
+        const destinationNumber = getNationalNumber(lead.phone);
+        if (!destinationNumber) {
+            return res.status(400).json({ message: 'Invalid phone number for calling.' });
+        }
+
+        logger.info(`Initiating call for Lead ${id} to ${destinationNumber} by Agent ${agentNumber}`);
+        await clickToCall(agentNumber, destinationNumber, callerId);
 
         res.json({ message: 'Call initiated successfully' });
     } catch (error) {
