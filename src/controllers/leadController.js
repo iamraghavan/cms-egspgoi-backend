@@ -138,24 +138,26 @@ const initiateCall = async (req, res) => {
             return res.status(400).json({ message: 'Agent number not found in profile or request.' });
         }
 
-        const callerId = process.env.SMARTFLO_CALLER_ID;
-        if (!callerId) {
-            return res.status(500).json({ message: 'System configuration error: Caller ID not set.' });
-        }
+        // Caller ID is optional in Smartflo (uses pilot number if omitted)
+        const callerId = process.env.SMARTFLO_CALLER_ID || null;
 
         const lead = await leadService.getLeadById(id);
         if (!lead) {
             return res.status(404).json({ message: 'Lead not found' });
         }
 
-        // Format to 10-digit National Number (remove +91)
+        // Format to 10-digit National Number (remove +91, etc.)
         const destinationNumber = getNationalNumber(lead.phone);
         if (!destinationNumber) {
-            return res.status(400).json({ message: 'Invalid phone number for calling.' });
+            // Fallback to original phone if parsing fails (though validation ensures E.164)
+            // But Smartflo prefers 10 digit for India usually.
+            logger.warn(`Could not extract national number from ${lead.phone}, using raw.`);
         }
 
-        logger.info(`Initiating call for Lead ${id} to ${destinationNumber} by Agent ${agentNumber}`);
-        await clickToCall(agentNumber, destinationNumber, callerId);
+        const finalDestNumber = destinationNumber || lead.phone;
+
+        logger.info(`Initiating call for Lead ${id} to ${finalDestNumber} by Agent ${agentNumber}`);
+        await clickToCall(agentNumber, finalDestNumber, callerId);
 
         res.json({ message: 'Call initiated successfully' });
     } catch (error) {

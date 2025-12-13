@@ -86,16 +86,19 @@ const smartfloService = {
    * @param {string} destinationNumber - Customer Number
    * @param {string} callerId - Caller ID (DID)
    */
-  clickToCall: async (agentNumber, destinationNumber, callerId) => {
+  clickToCall: async (agentNumber, destinationNumber, callerId = null) => {
     try {
       const headers = await smartfloService.getHeaders();
       const payload = {
         agent_number: agentNumber,
         destination_number: destinationNumber,
-        caller_id: callerId,
         async: 1, // Asynchronous
         call_timeout: 60 // Default timeout
       };
+
+      if (callerId) {
+        payload.caller_id = callerId;
+      }
 
       const response = await axios.post(`${SMARTFLO_BASE_URL}/click_to_call`, payload, { headers });
       return response.data;
