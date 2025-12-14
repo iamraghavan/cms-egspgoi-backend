@@ -3,10 +3,13 @@ const { v4: uuidv4 } = require('uuid');
 const { docClient } = require('../config/db');
 const { PutCommand, ScanCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const { TABLE_NAME: ASSETS_TABLE } = require('../models/assetModel');
+const { sendSuccess, sendError } = require('../utils/responseUtils');
 
 const uploadAsset = async (req, res) => {
   const { campaign_id, name, storage_url, file_type, version } = req.body;
   const uploaded_by = req.user.id;
+  
+  // Validation could be added here similar to campaign
 
   try {
     const id = uuidv4();
@@ -29,10 +32,9 @@ const uploadAsset = async (req, res) => {
     });
 
     await docClient.send(command);
-    res.status(201).json(newAsset);
+    sendSuccess(res, newAsset, 'Asset uploaded successfully', 201);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    sendError(res, error, 'Upload Asset');
   }
 };
 
@@ -66,10 +68,9 @@ const getAssets = async (req, res) => {
     }
 
     const result = await docClient.send(command);
-    res.json(result.Items);
+    sendSuccess(res, result.Items, 'Assets fetched successfully');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    sendError(res, error, 'Get Assets');
   }
 };
 
@@ -88,10 +89,9 @@ const updateAssetStatus = async (req, res) => {
     });
 
     const result = await docClient.send(command);
-    res.json(result.Attributes);
+    sendSuccess(res, result.Attributes, 'Asset status updated successfully');
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    sendError(res, error, 'Update Asset Status');
   }
 };
 
