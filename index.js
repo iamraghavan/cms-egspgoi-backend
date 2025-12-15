@@ -1,6 +1,15 @@
-require('dotenv').config();
+const dotenv = require('dotenv');
+console.log("Dotenv loaded");
+dotenv.config();
+
+console.log("Requiring server...");
 const app = require('./server');
+console.log("Server required");
+
+console.log("Requiring db...");
 const { client } = require('./src/config/db');
+console.log("DB required");
+
 const { ListTablesCommand } = require("@aws-sdk/client-dynamodb");
 
 const PORT = process.env.PORT || 3000;
