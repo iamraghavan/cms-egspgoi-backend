@@ -1,7 +1,7 @@
 const axios = require('axios');
 const logger = require('../utils/logger');
 
-const GEN_AI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+const GEN_AI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2:generateContent";
 
 const generateContent = async (topic) => {
     try {
