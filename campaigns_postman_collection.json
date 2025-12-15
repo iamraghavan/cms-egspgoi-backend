@@ -318,7 +318,7 @@
 							}
 						},
 						"url": {
-							"raw": "{{base_url}}/api/v1/gemini/generate?key=232003",
+							"raw": "{{base_url}}/api/v1/gemini/generate",
 							"host": [
 								"{{base_url}}"
 							],
@@ -327,12 +327,6 @@
 								"v1",
 								"gemini",
 								"generate"
-							],
-							"query": [
-								{
-									"key": "key",
-									"value": "232003"
-								}
 							]
 						}
 					},
