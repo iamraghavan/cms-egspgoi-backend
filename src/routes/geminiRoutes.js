@@ -11,6 +11,6 @@ const checkApiKey = (req, res, next) => {
     return res.status(401).json({ message: 'Unauthorized: Invalid API Key found' });
 };
 
-router.post('/generate', checkApiKey, generateBlog);
+router.post('/generate', generateBlog);
 
 module.exports = router;
