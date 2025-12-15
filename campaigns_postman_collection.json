@@ -307,13 +307,7 @@
 					"name": "Generate Blog Content",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}",
-								"type": "text"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n    \"topic\": \"Future of Artificial Intelligence in Engineering Education\"\n}",
@@ -324,7 +318,7 @@
 							}
 						},
 						"url": {
-							"raw": "{{base_url}}/api/v1/gemini/generate",
+							"raw": "{{base_url}}/api/v1/gemini/generate?key=232003",
 							"host": [
 								"{{base_url}}"
 							],
@@ -333,6 +327,12 @@
 								"v1",
 								"gemini",
 								"generate"
+							],
+							"query": [
+								{
+									"key": "key",
+									"value": "232003"
+								}
 							]
 						}
 					},
