@@ -41,4 +41,7 @@ router.head('/leads/:id', authenticate, headLead);
 router.options('/leads', optionsLead);
 router.put('/leads/:id', authenticate, putLead);
 
+router.post('/leads/calls/hangup', require('../controllers/smartfloController').hangupCall);
+router.get('/leads/calls/records', require('../controllers/smartfloController').getCallRecords);
+
 module.exports = router;

@@ -37,7 +37,8 @@ app.use('/api/v1/smartflo', require('./src/routes/smartfloWebhookRoutes'));
 app.use('/api/v1/analytics', require('./src/routes/analyticsRoutes'));
 app.use('/api/v1/search', require('./src/routes/searchRoutes'));
 app.use('/api/v1/leads/bulk', require('./src/routes/bulkLeadRoutes'));
-app.use('/api/v1/gemini', require('./src/routes/geminiRoutes'));
+// app.use('/api/v1/gemini', require('./src/routes/geminiRoutes'));
+app.use('/api/v1/smartflo', require('./src/routes/smartfloApiRoutes'));
 
 // Error Handler
 app.use(errorHandler);

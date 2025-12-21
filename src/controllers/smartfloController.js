@@ -1,136 +1,75 @@
-const smartfloService = require('../services/smartfloService');
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const { DynamoDBDocumentClient, GetCommand } = require("@aws-sdk/lib-dynamodb");
-const dbConfig = require('../config/db');
-const logger = require('../utils/logger');
-const Joi = require('joi');
+const axios = require('axios');
+const { docClient } = require('../config/db');
+const { PutCommand } = require('@aws-sdk/lib-dynamodb');
+const { sendSuccess, sendError } = require('../utils/responseUtils');
 
-const client = new DynamoDBClient(dbConfig);
-const docClient = DynamoDBDocumentClient.from(client);
+// Load environment variables
+const SMARTFLO_BASE_URL = process.env.SMARTFLO_BASE_URL || 'https://api-smartflo.tatateleservices.com/v1';
+const SMARTFLO_API_KEY = process.env.SMARTFLO_API_KEY; // Expected to be set in .env
 
-const TABLE_USERS = "Users"; 
-
-const smartfloController = {
-
-  // --- Call Operations ---
-
-  clickToCall: async (req, res, next) => {
-    // Validation Schema
-    const schema = Joi.object({
-        destination_number: Joi.string().pattern(/^[0-9]+$/).min(10).required(),
-        caller_id: Joi.string().optional().allow('')
-    });
-
-    const { error } = schema.validate(req.body);
-    if (error) {
-        logger.warn(`ClickToCall Validation Error: ${error.details[0].message}`);
-        return res.status(400).json({ error: error.details[0].message });
+/**
+ * Hangup a call via Smartflo API.
+ * Expects JSON body: { call_id: string }
+ */
+const hangupCall = async (req, res) => {
+  try {
+    const { call_id } = req.body;
+    if (!call_id) {
+      return sendError(res, { message: 'call_id is required' }, 'Hangup Call', 400);
     }
 
-    try {
-      const { destination_number } = req.body;
-      const userId = req.user.id; 
-
-      // Fetch user to get their Smartflo Agent ID
-      const userResult = await docClient.send(new GetCommand({
-        TableName: TABLE_USERS,
-        Key: { id: userId }
-      }));
-
-      const user = userResult.Item;
-      if (!user || !user.smartflo_agent_id) {
-        logger.warn(`User ${userId} attempted ClickToCall without Smartflo Agent ID`);
-        return res.status(400).json({ error: 'User does not have a linked Smartflo Agent ID' });
+    const url = `${SMARTFLO_BASE_URL}/call/hangup`;
+    const response = await axios.post(
+      url,
+      { call_id },
+      {
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          Authorization: `Bearer ${SMARTFLO_API_KEY}`,
+        },
       }
+    );
 
-      const callerId = req.body.caller_id || ""; 
+    // Store the response in DynamoDB for audit purposes
+    const item = {
+      pk: `SMARTFLO#CALL#${call_id}`,
+      sk: `METADATA#${new Date().toISOString()}`,
+      call_id,
+      response: response.data,
+      created_at: new Date().toISOString(),
+    };
+    await docClient.send(new PutCommand({ TableName: process.env.DYNAMODB_TABLE, Item: item }));
 
-      logger.info(`User ${userId} initiating ClickToCall to ${destination_number}`);
-      const result = await smartfloService.clickToCall(user.smartflo_agent_id, destination_number, callerId);
-      res.json(result);
-    } catch (error) {
-      logger.error('ClickToCall Error:', error);
-      next(error);
-    }
-  },
-
-  getLiveCalls: async (req, res, next) => {
-    try {
-      const filters = req.query;
-      // TODO: Implement stricter RBAC data scoping here if needed
-      
-      const result = await smartfloService.getLiveCalls(filters);
-      res.json(result);
-    } catch (error) {
-      logger.error('GetLiveCalls Error:', error);
-      next(error);
-    }
-  },
-
-  getCallRecords: async (req, res, next) => {
-    try {
-      const params = req.query;
-      const result = await smartfloService.getCallRecords(params);
-      res.json(result);
-    } catch (error) {
-      logger.error('GetCallRecords Error:', error);
-      next(error);
-    }
-  },
-
-  callOperation: async (req, res, next) => {
-    const schema = Joi.object({
-        type: Joi.number().valid(1, 2, 3, 4).required(), // 1: Monitor, 2: Whisper, 3: Barge, 4: Transfer
-        call_id: Joi.string().required(),
-        agent_id: Joi.string().optional(),
-        intercom: Joi.string().optional()
-    });
-
-    const { error } = schema.validate(req.body);
-    if (error) return res.status(400).json({ error: error.details[0].message });
-
-    try {
-      const { type, call_id, agent_id, intercom } = req.body;
-      
-      logger.info(`Call Operation ${type} on ${call_id} requested by ${req.user.id}`);
-      const result = await smartfloService.callOperation(type, call_id, agent_id, intercom);
-      res.json(result);
-    } catch (error) {
-      logger.error('CallOperation Error:', error);
-      next(error);
-    }
-  },
-
-  hangupCall: async (req, res, next) => {
-    const schema = Joi.object({
-        call_id: Joi.string().required()
-    });
-
-    const { error } = schema.validate(req.body);
-    if (error) return res.status(400).json({ error: error.details[0].message });
-
-    try {
-      const { call_id } = req.body;
-      logger.info(`Hangup Call ${call_id} requested by ${req.user.id}`);
-      const result = await smartfloService.hangupCall(call_id);
-      res.json(result);
-    } catch (error) {
-      logger.error('HangupCall Error:', error);
-      next(error);
-    }
-  },
-
-  // --- User Management (Smartflo Users) ---
-
-  getSmartfloUsers: async (req, res, next) => {
-    try {
-      const result = await smartfloService.getUsers();
-      res.json(result);
-    } catch (error) {
-      logger.error('GetSmartfloUsers Error:', error);
-      next(error);
-    }
+    sendSuccess(res, response.data, 'Call hung up successfully');
+  } catch (error) {
+    const errMsg = error.response ? error.response.data : error.message;
+    sendError(res, errMsg, 'Hangup Call');
   }
 };
 
-module.exports = smartfloController;
+/**
+ * Retrieve call detail records from Smartflo.
+ * Accepts query parameters matching Smartflo API.
+ */
+const getCallRecords = async (req, res) => {
+  try {
+    const query = req.query; // forward all query params
+    const url = `${SMARTFLO_BASE_URL}/call/records`;
+    const response = await axios.get(url, {
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${SMARTFLO_API_KEY}`,
+      },
+      params: query,
+    });
+
+    // Optionally store the fetched records (batch) – here we just return them
+    sendSuccess(res, response.data, 'Call records fetched');
+  } catch (error) {
+    const errMsg = error.response ? error.response.data : error.message;
+    sendError(res, errMsg, 'Get Call Records');
+  }
+};
+
+module.exports = { hangupCall, getCallRecords };

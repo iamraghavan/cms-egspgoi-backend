@@ -187,3 +187,15 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
         *   "Load More" button sends `cursor={meta.cursor}`.
     *   **TanStack Query**: Use `useInfiniteQuery` to handle this automatically using the `getNextPageParam` option.
 
+### I. Smartflo Call Management Updates (New)
+*   **Call Controls Section**:
+    *   **Hang-up Call**: Provide a simple form with a text input for `call_id` and a "Hang-up" button that triggers `POST /api/v1/smartflo/call/hangup`. Include loading states and toast notifications for success/failure.
+*   **Call Records Table**:
+    *   Create a paginated table viewing the results of `GET /api/v1/smartflo/call/records`.
+    *   **Filters**: Date range (From/To), Call Direction (Inbound/Outbound), Agent Name.
+    *   **Columns**: Call ID, Status, Duration, Agent, Service, Recording URL (link to play).
+    *   **UX**: Add a refresh button and sorting capabilities.
+*   **API Integration**:
+    *   Ensure the Smartflo API Key is set in the backend environment variables (`SMARTFLO_API_KEY`).
+    *   Frontend should route requests through the backend proxy (`/api/v1/smartflo/...`) rather than calling Smartflo directly to avoid exposing the key.
+
