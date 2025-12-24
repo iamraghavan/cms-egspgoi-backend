@@ -12,53 +12,60 @@ const updateSettings = async (req, res) => {
             return res.status(400).json({ message: 'Preferences object is required' });
         }
 
-        // Validate individual preference fields if needed, relying on Joi during save is better but direct update needs check or schema use
-        // Ideally we should use userSchema.validate({ ...existingUser, preferences: ... }) but that requires a fetch.
-        // For now, we trust the input structure matches strictly Joi expectations loosely:
-        // Or specific validation:
-        const validKeys = ['currency', 'language', 'timezone', 'date_format', 'theme'];
-        const updateExpressionParts = [];
-        const expressionAttributeValues = { ":now": getISTTimestamp() };
-        const expressionAttributeNames = {};
+        // 1. Fetch current user to get existing preferences
+        const getCommand = new GetCommand({
+            TableName: USERS_TABLE,
+            Key: { id }
+        });
+        
+        const userResult = await docClient.send(getCommand);
+        if (!userResult.Item) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
-        Object.keys(preferences).forEach((key, index) => {
+        const currentUser = userResult.Item;
+        const currentPreferences = currentUser.preferences || {};
+
+        // 2. Merge new preferences with existing ones
+        // Validate allowed keys
+        const validKeys = ['currency', 'language', 'timezone', 'date_format', 'theme'];
+        const newPreferences = { ...currentPreferences };
+
+        let hasUpdates = false;
+        Object.keys(preferences).forEach(key => {
             if (validKeys.includes(key)) {
-                const attrName = `#pref_${key}`;
-                const attrVal = `:val_${key}`;
-                // We update inside the 'preferences' map. 
-                // DynamoDB supports nested updates via dot notation if map exists.
-                // However, if 'preferences' doesn't exist, we might need to initialize it.
-                // Safe way: update the entire preferences object OR user SET preferences.currency = :val
-                // Let's expect 'preferences' field exists (defaulted in model). 
-                updateExpressionParts.push(`preferences.${key} = ${attrVal}`);
-                expressionAttributeValues[attrVal] = preferences[key];
+                newPreferences[key] = preferences[key];
+                hasUpdates = true;
             }
         });
 
-        if (updateExpressionParts.length === 0) {
-            return res.status(400).json({ message: 'No valid settings provided' });
+        if (!hasUpdates) {
+             return res.json({ message: 'No valid settings to update', settings: currentPreferences });
         }
 
-        const updateExpression = "SET " + updateExpressionParts.join(', ') + ", updated_at = :now";
-
-        const command = new UpdateCommand({
+        // 3. Update the ENTIRE preferences object
+        // This avoids "DocumentPathNotDefinedException" for nested updates
+        const updateCommand = new UpdateCommand({
             TableName: USERS_TABLE,
             Key: { id },
-            UpdateExpression: updateExpression,
-            ExpressionAttributeValues: expressionAttributeValues,
+            UpdateExpression: "SET preferences = :pref, updated_at = :now",
+            ExpressionAttributeValues: {
+                ":pref": newPreferences,
+                ":now": getISTTimestamp()
+            },
             ReturnValues: "ALL_NEW"
         });
 
-        const result = await docClient.send(command);
+        const result = await docClient.send(updateCommand);
         
-        const user = result.Attributes;
-        delete user.password_hash;
+        const updatedUser = result.Attributes;
+        delete updatedUser.password_hash;
         
-        res.json({ message: 'Settings updated successfully', settings: user.preferences });
+        res.json({ message: 'Settings updated successfully', settings: updatedUser.preferences });
 
     } catch (error) {
         console.error('Update Settings Error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
