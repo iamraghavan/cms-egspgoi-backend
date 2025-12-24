@@ -14,20 +14,13 @@ const createLead = async (req, res) => {
     try {
         const { name, phone, email, pipeline_id, college, course, state, district, admission_year, source_website, utm_params } = req.body;
 
-        // Normalize Phone
+        // Validation
         const formattedPhone = formatPhoneNumber(phone);
-        if (!formattedPhone) {
-            return res.status(400).json({ message: 'Invalid phone number format.' });
-        }
+        if (!formattedPhone) return sendError(res, { message: 'Invalid phone number format.' }, 'Validation', 400);
 
-        // Update body for validation (since Joi expects E.164 now)
         req.body.phone = formattedPhone;
-
-        // Validate Input
         const { error } = leadSchema.validate(req.body);
-        if (error) {
-            return res.status(400).json({ message: error.details[0].message });
-        }
+        if (error) return sendError(res, { message: error.details[0].message }, 'Validation', 400);
 
         const leadData = {
             name, phone: formattedPhone, email, pipeline_id, college, course, state, district,
@@ -38,16 +31,16 @@ const createLead = async (req, res) => {
 
         const result = await leadService.createLeadInDB(leadData, true, req.user.id);
         
-        res.status(201).json(result.lead);
+        sendSuccess(res, result.lead, 'Lead created successfully', 201);
     } catch (error) {
-        handleError(res, error, 'Create Lead');
+        sendError(res, error, 'Create Lead');
     }
 };
 
 // 2. Submit Lead (Public)
 const submitLead = async (req, res) => {
     try {
-        // Strict Input Validation for Public API
+        // Strict Validation Schema (Public)
         const submissionSchema = Joi.object({
             phone: Joi.string().required(),
             admission_year: Joi.string().required(),
@@ -64,22 +57,12 @@ const submitLead = async (req, res) => {
         }).unknown(true);
 
         const { error } = submissionSchema.validate(req.body);
-        if (error) {
-            return res.status(400).json({ message: error.details[0].message });
-        }
+        if (error) return sendError(res, { message: error.details[0].message }, 'Validation', 400);
 
-        const { 
-            name, email, phone, college, course, state, district, 
-            admission_year, source_website, 
-            utm_source, utm_medium, utm_campaign,
-            ...otherDetails 
-        } = req.body;
+        const { name, email, phone, college, course, state, district, admission_year, source_website, utm_source, utm_medium, utm_campaign, ...otherDetails } = req.body;
 
-        // Normalize Phone
         const formattedPhone = formatPhoneNumber(phone);
-        if (!formattedPhone) {
-            return res.status(400).json({ message: 'Invalid phone number format.' });
-        }
+        if (!formattedPhone) return sendError(res, { message: 'Invalid phone number format.' }, 'Validation', 400);
 
         const leadData = {
             name, email, phone: formattedPhone, college, course, state, district,
@@ -91,46 +74,29 @@ const submitLead = async (req, res) => {
         const result = await leadService.createLeadInDB(leadData, false);
 
         if (result.isDuplicate) {
-            return res.status(200).json({ message: 'Lead already exists.', lead_id: result.lead.id });
+            return sendSuccess(res, { lead_id: result.lead.id }, 'Lead already exists.', 200);
         }
 
-        res.status(201).json({ message: 'Lead submitted successfully', lead_id: result.lead.id });
+        sendSuccess(res, { lead_id: result.lead.id }, 'Lead submitted successfully', 201);
     } catch (error) {
-        handleError(res, error, 'Submit Lead');
+        sendError(res, error, 'Submit Lead');
     }
 };
 
-// 3. Get Leads (Paginated)
+// 3. Get Leads
 const getLeads = async (req, res) => {
     try {
         const { limit, cursor } = req.query;
-        
-        // Joi Validation for Query Params
-        const schema = Joi.object({
-            limit: Joi.number().integer().min(1).max(100).default(20),
-            cursor: Joi.string().optional()
-        });
-        
-        const { error, value } = schema.validate({ limit, cursor });
-        if (error) return sendError(res, error, 'Validation', 400);
+        const limitNum = parseInt(limit) || 20;
 
         const filter = {};
-
-        // Security: Enforce data scoping
         if (req.user.role !== 'Super Admin' && req.user.role !== 'Admission Manager') {
             filter.assigned_to = req.user.id;
         }
 
-        const result = await leadService.getLeadsFromDB(
-            filter, 
-            value.limit,
-            value.cursor
-        );
+        const result = await leadService.getLeadsFromDB(filter, limitNum, cursor);
 
-        sendSuccess(res, result.items, 'Leads fetched successfully', 200, { 
-            cursor: result.cursor,
-            count: result.count 
-        });
+        sendSuccess(res, result.items, 'Leads fetched successfully', 200, { cursor: result.cursor, count: result.count });
     } catch (error) {
         sendError(res, error, 'Get Leads');
     }
@@ -140,38 +106,23 @@ const getLeads = async (req, res) => {
 const initiateCall = async (req, res) => {
     try {
         const { id } = req.params;
-        // Security: Prefer agent number from user profile
         const agentNumber = req.user.agent_number || req.body.agent_number;
 
-        if (!agentNumber) {
-            return res.status(400).json({ message: 'Agent number not found in profile or request.' });
-        }
+        if (!agentNumber) return sendError(res, { message: 'Agent number not found.' }, 'Initiate Call', 400);
 
-        // Caller ID is optional in Smartflo (uses pilot number if omitted)
-        // Prefer User's tailored Caller ID, then global env, then null
         const callerId = req.user.caller_id || process.env.SMARTFLO_CALLER_ID || null;
-
         const lead = await leadService.getLeadById(id);
-        if (!lead) {
-            return res.status(404).json({ message: 'Lead not found' });
-        }
+        
+        if (!lead) return sendError(res, { message: 'Lead not found' }, 'Initiate Call', 404);
 
-        // Format to 10-digit National Number (remove +91, etc.)
-        const destinationNumber = getNationalNumber(lead.phone);
-        if (!destinationNumber) {
-            // Fallback to original phone if parsing fails (though validation ensures E.164)
-            // But Smartflo prefers 10 digit for India usually.
-            logger.warn(`Could not extract national number from ${lead.phone}, using raw.`);
-        }
+        const destinationNumber = getNationalNumber(lead.phone) || lead.phone;
+        
+        logger.info(`Initiating call for Lead ${id} to ${destinationNumber}`);
+        await clickToCall(agentNumber, destinationNumber, callerId);
 
-        const finalDestNumber = destinationNumber || lead.phone;
-
-        logger.info(`Initiating call for Lead ${id} to ${finalDestNumber} by Agent ${agentNumber}`);
-        await clickToCall(agentNumber, finalDestNumber, callerId);
-
-        res.json({ message: 'Call initiated successfully' });
+        sendSuccess(res, null, 'Call initiated successfully');
     } catch (error) {
-        handleError(res, error, 'Initiate Call');
+        sendError(res, error, 'Initiate Call');
     }
 };
 
@@ -180,11 +131,7 @@ const addNote = async (req, res) => {
     try {
         const { id } = req.params;
         const { content } = req.body;
-
-        if (!content) return res.status(400).json({ message: 'Note content is required' });
-
-        const lead = await leadService.getLeadById(id);
-        if (!lead) return res.status(404).json({ message: 'Lead not found' });
+        if (!content) return sendError(res, { message: 'Content required' }, 'Add Note', 400);
 
         const newNote = {
             content,
@@ -193,12 +140,15 @@ const addNote = async (req, res) => {
             created_at: getISTTimestamp()
         };
 
+        const lead = await leadService.getLeadById(id);
+        if (!lead) return sendError(res, { message: 'Lead not found' }, 'Add Note', 404);
+
         const updatedNotes = [...(lead.notes || []), newNote];
         await leadService.updateLeadInDB(id, { notes: updatedNotes });
 
-        res.json({ message: 'Note added successfully', note: newNote });
+        sendSuccess(res, { note: newNote }, 'Note added successfully');
     } catch (error) {
-        handleError(res, error, 'Add Note');
+        sendError(res, error, 'Add Note');
     }
 };
 
@@ -207,17 +157,14 @@ const transferLead = async (req, res) => {
     try {
         const { id } = req.params;
         const { new_agent_id } = req.body;
+        if (!new_agent_id) return sendError(res, { message: 'New Agent ID required' }, 'Transfer Lead', 400);
 
-        if (!new_agent_id) return res.status(400).json({ message: 'New Agent ID is required' });
+        const updated = await leadService.updateLeadInDB(id, { assigned_to: new_agent_id });
+        if (!updated) return sendError(res, { message: 'Lead not found' }, 'Transfer Lead', 404);
 
-        const lead = await leadService.getLeadById(id);
-        if (!lead) return res.status(404).json({ message: 'Lead not found' });
-
-        await leadService.updateLeadInDB(id, { assigned_to: new_agent_id });
-
-        res.json({ message: 'Lead transferred successfully' });
+        sendSuccess(res, null, 'Lead transferred successfully');
     } catch (error) {
-        handleError(res, error, 'Transfer Lead');
+        sendError(res, error, 'Transfer Lead');
     }
 };
 
@@ -226,108 +173,83 @@ const updateLeadStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
+        if (!status) return sendError(res, { message: 'Status required' }, 'Update Status', 400);
 
-        if (!status) return res.status(400).json({ message: 'Status is required' });
+        const updated = await leadService.updateLeadInDB(id, { status });
+        if (!updated) return sendError(res, { message: 'Lead not found' }, 'Update Status', 404);
 
-        const lead = await leadService.getLeadById(id);
-        if (!lead) return res.status(404).json({ message: 'Lead not found' });
-
-        await leadService.updateLeadInDB(id, { status });
-
-        res.json({ message: 'Lead status updated successfully', status });
+        sendSuccess(res, { status }, 'Status updated successfully');
     } catch (error) {
-        handleError(res, error, 'Update Lead Status');
+        sendError(res, error, 'Update Lead Status');
     }
 };
 
-// 8. Delete Lead (Soft/Hard)
+// 8. Delete Lead
 const deleteLead = async (req, res) => {
     try {
         const { id } = req.params;
-        const { type } = req.query; // 'hard' or 'soft' (default)
+        const { type } = req.query; 
 
-        // Security: Only Admin can hard delete
         if (type === 'hard' && req.user.role !== 'Super Admin') {
-            return res.status(403).json({ message: 'Only Super Admin can perform hard deletes.' });
+            return sendError(res, { message: 'Only Super Admin can hard delete.' }, 'Delete Lead', 403);
         }
 
         const result = await leadService.deleteLead(id, type);
-        if (!result) return res.status(404).json({ message: 'Lead not found' });
+        if (!result) return sendError(res, { message: 'Lead not found' }, 'Delete Lead', 404);
 
-        res.json(result);
+        sendSuccess(res, result, 'Lead deleted successfully');
     } catch (error) {
-        handleError(res, error, 'Delete Lead');
+        sendError(res, error, 'Delete Lead');
     }
 };
 
-// 9. HEAD Lead (Check Existence)
+// 9. HEAD Lead
 const headLead = async (req, res) => {
     try {
-        const { id } = req.params;
-        const lead = await leadService.getLeadById(id);
-        if (!lead || lead.is_deleted) {
-            return res.status(404).end();
-        }
+        const lead = await leadService.getLeadById(req.params.id);
+        if (!lead || lead.is_deleted) return res.status(404).end();
         res.status(200).end();
     } catch (error) {
         res.status(500).end();
     }
 };
 
-// 10. OPTIONS Lead (Allowed Methods)
+// 10. OPTIONS
 const optionsLead = (req, res) => {
     res.set('Allow', 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS');
     res.status(204).end();
 };
 
-// 11. PUT Lead (Full Update)
+// 11. PUT Lead
 const putLead = async (req, res) => {
     try {
-        const { id } = req.params;
-        const updatedLead = await leadService.updateLeadInDB(id, req.body);
-        if (!updatedLead) return res.status(404).json({ message: 'Lead not found' });
-
-        res.json(updatedLead);
+        const updated = await leadService.updateLeadInDB(req.params.id, req.body);
+        if (!updated) return sendError(res, { message: 'Lead not found' }, 'Put Lead', 404);
+        sendSuccess(res, updated, 'Lead updated successfully');
     } catch (error) {
-        handleError(res, error, 'Put Lead');
+        sendError(res, error, 'Put Lead');
     }
 };
 
+// 12. Get Notes
 const getLeadNotes = async (req, res) => {
     try {
-        const { id } = req.params;
-        const lead = await leadService.getLeadById(id);
-        if (!lead) return res.status(404).json({ message: 'Lead not found' });
-
+        const lead = await leadService.getLeadById(req.params.id);
+        if (!lead) return sendError(res, { message: 'Lead not found' }, 'Get Notes', 404);
+        
         const notes = lead.notes || [];
-        if (notes.length === 0) return res.json([]);
-
-        // Enrich with Author Names
-        const authorIds = notes.map(n => n.author_id);
-        const userMap = await getUserNamesMap(authorIds);
-
-        const enrichedNotes = notes.map(note => ({
-            ...note,
-            author_name: userMap[note.author_id] || 'Unknown' 
-        }));
-
-        res.json(enrichedNotes);
+        // Enrichment can stay in service or here. 
+        // Keeping here for now as view-logic but leveraging helper.
+        const userMap = await getUserNamesMap(notes.map(n => n.author_id));
+        const enriched = notes.map(n => ({ ...n, author_name: userMap[n.author_id] || 'Unknown' }));
+        
+        sendSuccess(res, enriched, 'Notes fetched');
     } catch (error) {
-        handleError(res, error, 'Get Lead Notes');
+         sendError(res, error, 'Get Lead Notes');
     }
 };
 
 module.exports = { 
-    createLead, 
-    getLeads, 
-    initiateCall, 
-    submitLead, 
-    addNote, 
-    getLeadNotes,
-    transferLead, 
-    updateLeadStatus,
-    deleteLead,
-    headLead,
-    optionsLead,
-    putLead
+    createLead, getLeads, initiateCall, submitLead, addNote, getLeadNotes,
+    transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead
 };
