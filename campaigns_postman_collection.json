@@ -333,6 +333,84 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Smartflo",
+			"item": [
+				{
+					"name": "Hangup Call",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"call_id\": \"1715235734.129662\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/smartflo/call/hangup",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"smartflo",
+								"call",
+								"hangup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Call Records",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/smartflo/call/records?from_date=2024-05-01&to_date=2024-05-10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"smartflo",
+								"call",
+								"records"
+							],
+							"query": [
+								{
+									"key": "from_date",
+									"value": "2024-05-01"
+								},
+								{
+									"key": "to_date",
+									"value": "2024-05-10"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"variable": [
