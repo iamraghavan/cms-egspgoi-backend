@@ -300,40 +300,7 @@
 				}
 			]
 		},
-		{
-			"name": "AI Content",
-			"item": [
-				{
-					"name": "Generate Blog Content",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"topic\": \"Future of Artificial Intelligence in Engineering Education\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/gemini/generate",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"gemini",
-								"generate"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
+	
 		{
 			"name": "Smartflo",
 			"item": [

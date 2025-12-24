@@ -2,7 +2,7 @@ const { docClient } = require('../config/db');
 const { PutCommand, GetCommand, ScanCommand, UpdateCommand, DeleteCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 const { getISTTimestamp } = require('../utils/timeUtils');
 
-const TABLE_NAME = process.env.DYNAMODB_TABLE;
+const { TABLE_NAME } = require('../models/leadModel');
 
 class LeadRepository {
     async create(lead) {
