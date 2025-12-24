@@ -194,6 +194,47 @@
 			]
 		},
 		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Update User Settings",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"preferences\": {\n        \"currency\": \"USD\",\n        \"language\": \"es\",\n        \"theme\": \"dark\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/auth/settings",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"auth",
+								"settings"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Assets",
 			"item": [
 				{

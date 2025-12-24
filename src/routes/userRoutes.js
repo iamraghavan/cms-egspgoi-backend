@@ -13,6 +13,7 @@ router.post('/refresh', refreshToken);
 router.get('/auth/profile', authenticate, getProfile);
 router.post('/auth/refresh', refreshToken);
 router.patch('/auth/availability', authenticate, toggleAvailability);
+router.put('/auth/settings', authenticate, require('../controllers/userSettingsController').updateSettings);
 router.get('/', authenticate, checkPermission('all'), getUsers); // Only Super Admin (with 'all' permission)
 router.post('/', authenticate, checkPermission('all'), createUser); // Only Super Admin
 

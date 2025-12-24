@@ -17,6 +17,13 @@ const userSchema = Joi.object({
   active_leads_count: Joi.number().integer().min(0).default(0), // Load balancing
   last_assigned_at: Joi.string().allow(null), // Tie-breaker
   metadata: Joi.object().default({}),
+  preferences: Joi.object({
+    currency: Joi.string().default('INR'),
+    language: Joi.string().default('en'),
+    timezone: Joi.string().default('Asia/Kolkata'),
+    date_format: Joi.string().default('DD/MM/YYYY'),
+    theme: Joi.string().valid('light', 'dark', 'system').default('system')
+  }).default({}),
   is_deleted: Joi.boolean().default(false),
   deleted_at: Joi.string().allow(null),
   created_at: Joi.string(),
