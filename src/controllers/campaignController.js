@@ -8,21 +8,21 @@ const { sendSuccess, sendError } = require('../utils/responseUtils');
 // 1. Create Campaign
 const createCampaign = async (req, res) => {
   try {
-    const { 
-      name, description, type, platform, start_date, end_date, 
-      target_audience, settings, institution, objective, kpi, detailed_plan 
+    const {
+      name, description, type, platform, start_date, end_date,
+      target_audience, settings, institution, objective, kpi, detailed_plan
     } = req.body;
 
     // Validate Input
     // Note: We might need to construct a robust object for validation if body has extra fields
     const { error } = campaignSchema.validate({
-        ...req.body,
-        id: uuidv4(), // Dummy ID for validation if schema requires UUID
-        created_by: req.user.id
-    }, { allowUnknown: true, abortEarly: false }); 
+      ...req.body,
+      id: uuidv4(), // Dummy ID for validation if schema requires UUID
+      created_by: req.user.id
+    }, { allowUnknown: true, abortEarly: false });
     // Schema might require exact fields, but let's be flexible or严格 based on model.
     // The model schema requires 'id' and 'created_by'.
-    
+
     // Better approach: Prepare the object first
     const id = uuidv4();
     const created_by = req.user.id;
@@ -51,7 +51,7 @@ const createCampaign = async (req, res) => {
 
     const { error: validationError } = campaignSchema.validate(newCampaign);
     if (validationError) {
-        return sendError(res, validationError, 'Validation', 400);
+      return sendError(res, validationError, 'Validation', 400);
     }
 
     const command = new PutCommand({
@@ -75,11 +75,11 @@ const getCampaigns = async (req, res) => {
       FilterExpression: "is_deleted = :false",
       ExpressionAttributeValues: { ":false": false }
     });
-    
+
     const result = await docClient.send(command);
     // Sort in memory (newest first)
     const campaigns = (result.Items || []).sort((a, b) => parseISTTimestamp(b.created_at) - parseISTTimestamp(a.created_at));
-    
+
     sendSuccess(res, campaigns, 'Campaigns fetched successfully');
   } catch (error) {
     sendError(res, error, 'Get Campaigns');
@@ -88,64 +88,64 @@ const getCampaigns = async (req, res) => {
 
 // 3. Get Campaign By ID
 const getCampaignById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const result = await docClient.send(new GetCommand({
-            TableName: CAMPAIGNS_TABLE,
-            Key: { id }
-        }));
-        
-        if (!result.Item || result.Item.is_deleted) {
-            return sendError(res, { message: 'Campaign not found' }, 'Get Campaign', 404);
-        }
+  try {
+    const { id } = req.params;
+    const result = await docClient.send(new GetCommand({
+      TableName: CAMPAIGNS_TABLE,
+      Key: { id }
+    }));
 
-        sendSuccess(res, result.Item, 'Campaign fetched successfully');
-    } catch (error) {
-        sendError(res, error, 'Get Campaign By ID');
+    if (!result.Item || result.Item.is_deleted) {
+      return sendError(res, { message: 'Campaign not found' }, 'Get Campaign', 404);
     }
+
+    sendSuccess(res, result.Item, 'Campaign fetched successfully');
+  } catch (error) {
+    sendError(res, error, 'Get Campaign By ID');
+  }
 };
 
 // 4. Update Campaign
 const updateCampaign = async (req, res) => {
-    try {
-        const { id } = req.params;
-        // Fetch existing first to merge/validate
-        const getResult = await docClient.send(new GetCommand({
-            TableName: CAMPAIGNS_TABLE,
-            Key: { id }
-        }));
+  try {
+    const { id } = req.params;
+    // Fetch existing first to merge/validate
+    const getResult = await docClient.send(new GetCommand({
+      TableName: CAMPAIGNS_TABLE,
+      Key: { id }
+    }));
 
-        if (!getResult.Item || getResult.Item.is_deleted) {
-            return sendError(res, { message: 'Campaign not found' }, 'Update Campaign', 404);
-        }
-        
-        const existingCampaign = getResult.Item;
-        const updatedFields = req.body;
-        
-        // Prevent immutable field updates if necessary (like id, created_by)
-        delete updatedFields.id;
-        delete updatedFields.created_by;
-        delete updatedFields.created_at;
-
-        const updatedCampaign = {
-            ...existingCampaign,
-            ...updatedFields,
-            updated_at: getISTTimestamp()
-        };
-
-        // Validate Merged Object
-        const { error } = campaignSchema.validate(updatedCampaign);
-        if (error) return sendError(res, error, 'Validation', 400);
-
-        await docClient.send(new PutCommand({
-            TableName: CAMPAIGNS_TABLE,
-            Item: updatedCampaign
-        }));
-
-        sendSuccess(res, updatedCampaign, 'Campaign updated successfully');
-    } catch (error) {
-        sendError(res, error, 'Update Campaign');
+    if (!getResult.Item || getResult.Item.is_deleted) {
+      return sendError(res, { message: 'Campaign not found' }, 'Update Campaign', 404);
     }
+
+    const existingCampaign = getResult.Item;
+    const updatedFields = req.body;
+
+    // Prevent immutable field updates if necessary (like id, created_by)
+    delete updatedFields.id;
+    delete updatedFields.created_by;
+    delete updatedFields.created_at;
+
+    const updatedCampaign = {
+      ...existingCampaign,
+      ...updatedFields,
+      updated_at: getISTTimestamp()
+    };
+
+    // Validate Merged Object
+    const { error } = campaignSchema.validate(updatedCampaign);
+    if (error) return sendError(res, error, 'Validation', 400);
+
+    await docClient.send(new PutCommand({
+      TableName: CAMPAIGNS_TABLE,
+      Item: updatedCampaign
+    }));
+
+    sendSuccess(res, updatedCampaign, 'Campaign updated successfully');
+  } catch (error) {
+    sendError(res, error, 'Update Campaign');
+  }
 };
 
 // 5. Update Status (Patch)
@@ -155,7 +155,7 @@ const updateCampaignStatus = async (req, res) => {
 
   const validStatuses = ['draft', 'scheduled', 'active', 'completed', 'paused'];
   if (!validStatuses.includes(status)) {
-      return sendError(res, { message: `Invalid status. Allowed: ${validStatuses.join(', ')}` }, 'Update Status', 400);
+    return sendError(res, { message: `Invalid status. Allowed: ${validStatuses.join(', ')}` }, 'Update Status', 400);
   }
 
   try {
@@ -178,42 +178,61 @@ const updateCampaignStatus = async (req, res) => {
   }
 };
 
-// 6. Delete Campaign (Soft)
+// 6. Delete Campaign (Soft/Hard)
 const deleteCampaign = async (req, res) => {
-    try {
-        const { id } = req.params;
-        // Check existence
-        const getResult = await docClient.send(new GetCommand({
-            TableName: CAMPAIGNS_TABLE,
-            Key: { id }
-        }));
+  try {
+    const { id } = req.params;
+    const { type } = req.query;
 
-        if (!getResult.Item) {
-            return sendError(res, { message: 'Campaign not found' }, 'Delete Campaign', 404);
-        }
-
-        const command = new UpdateCommand({
-            TableName: CAMPAIGNS_TABLE,
-            Key: { id },
-            UpdateExpression: "set is_deleted = :true, deleted_at = :now",
-            ExpressionAttributeValues: {
-                ":true": true,
-                ":now": getISTTimestamp()
-            }
-        });
-
-        await docClient.send(command);
-        sendSuccess(res, { id }, 'Campaign deleted successfully');
-    } catch (error) {
-        sendError(res, error, 'Delete Campaign');
+    // Check Hard Delete Permission
+    if (type === 'hard') {
+      if (req.user.role !== 'Super Admin') {
+        return sendError(res, { message: 'Only Super Admin can hard delete.' }, 'Delete Campaign', 403);
+      }
     }
+
+    // Check existence
+    const getResult = await docClient.send(new GetCommand({
+      TableName: CAMPAIGNS_TABLE,
+      Key: { id }
+    }));
+
+    if (!getResult.Item) {
+      return sendError(res, { message: 'Campaign not found' }, 'Delete Campaign', 404);
+    }
+
+    if (type === 'hard') {
+      const { DeleteCommand } = require("@aws-sdk/lib-dynamodb");
+      await docClient.send(new DeleteCommand({
+        TableName: CAMPAIGNS_TABLE,
+        Key: { id }
+      }));
+      sendSuccess(res, { id }, 'Campaign permanently deleted');
+      return;
+    }
+
+    const command = new UpdateCommand({
+      TableName: CAMPAIGNS_TABLE,
+      Key: { id },
+      UpdateExpression: "set is_deleted = :true, deleted_at = :now",
+      ExpressionAttributeValues: {
+        ":true": true,
+        ":now": getISTTimestamp()
+      }
+    });
+
+    await docClient.send(command);
+    sendSuccess(res, { id }, 'Campaign deleted successfully');
+  } catch (error) {
+    sendError(res, error, 'Delete Campaign');
+  }
 };
 
-module.exports = { 
-    createCampaign, 
-    getCampaigns, 
-    getCampaignById, 
-    updateCampaign, 
-    updateCampaignStatus, 
-    deleteCampaign 
+module.exports = {
+  createCampaign,
+  getCampaigns,
+  getCampaignById,
+  updateCampaign,
+  updateCampaignStatus,
+  deleteCampaign
 };

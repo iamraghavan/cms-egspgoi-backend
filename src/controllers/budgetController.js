@@ -116,4 +116,36 @@ const verifyProof = async (req, res) => {
   }
 };
 
-module.exports = { createBudget, approveBudget, uploadProof, verifyProof };
+// Delete Budget request (Soft/Hard)
+const deleteBudget = async (req, res) => {
+  const { id } = req.params;
+  const { type } = req.query; // hard or soft
+
+  try {
+    if (type === 'hard') {
+      if (req.user.role !== 'Super Admin') {
+        return res.status(403).json({ message: 'Only Super Admin can hard delete.' });
+      }
+      const { DeleteCommand } = require("@aws-sdk/lib-dynamodb");
+      await docClient.send(new DeleteCommand({
+        TableName: BUDGET_TABLE_NAME,
+        Key: { id }
+      }));
+      return res.json({ message: 'Budget permanently deleted' });
+    } else {
+      const command = new UpdateCommand({
+        TableName: BUDGET_TABLE_NAME,
+        Key: { id },
+        UpdateExpression: "set status = :status",
+        ExpressionAttributeValues: { ":status": 'deleted' }
+      });
+      await docClient.send(command);
+      return res.json({ message: 'Budget soft deleted' });
+    }
+  } catch (error) {
+    console.error('Delete Budget Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { createBudget, approveBudget, uploadProof, verifyProof, deleteBudget };

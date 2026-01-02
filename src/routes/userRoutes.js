@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getProfile, getUsers, createUser, refreshToken, toggleAvailability } = require('../controllers/userController');
+const { register, login, getProfile, getUsers, createUser, refreshToken, toggleAvailability, updateUser, deleteUser } = require('../controllers/userController');
 const { authenticate } = require('../middleware/authMiddleware');
 const { checkPermission } = require('../middleware/rbacMiddleware');
 
@@ -16,5 +16,7 @@ router.patch('/auth/availability', authenticate, toggleAvailability);
 router.put('/auth/settings', authenticate, require('../controllers/userSettingsController').updateSettings);
 router.get('/', authenticate, checkPermission('all'), getUsers); // Only Super Admin (with 'all' permission)
 router.post('/', authenticate, checkPermission('all'), createUser); // Only Super Admin
+router.put('/:id', authenticate, checkPermission('all'), updateUser); // Only Super Admin
+router.delete('/:id', authenticate, checkPermission('all'), deleteUser); // Only Super Admin
 
 module.exports = router;

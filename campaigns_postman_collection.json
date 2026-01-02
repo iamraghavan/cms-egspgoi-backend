@@ -177,7 +177,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/campaigns/{{campaign_id}}",
+							"raw": "{{base_url}}/api/v1/campaigns/{{campaign_id}}?type=soft",
 							"host": [
 								"{{base_url}}"
 							],
@@ -186,6 +186,13 @@
 								"v1",
 								"campaigns",
 								"{{campaign_id}}"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "soft",
+									"description": "hard (Super Admin) or soft"
+								}
 							]
 						}
 					},
@@ -227,6 +234,39 @@
 								"users",
 								"auth",
 								"settings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Budget",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/budgets/{{budget_id}}?type=soft",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"budgets",
+								"{{budget_id}}"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "soft",
+									"description": "hard (Super Admin) or soft"
+								}
 							]
 						}
 					},
@@ -338,10 +378,42 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Delete Asset",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/assets/{{asset_id}}?type=soft",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"assets",
+								"{{asset_id}}"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "soft",
+									"description": "hard (Super Admin) or soft"
+								}
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
-	
 		{
 			"name": "Smartflo",
 			"item": [

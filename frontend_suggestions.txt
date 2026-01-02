@@ -40,6 +40,8 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
     /users/
       /page.tsx              # Admin User Management
   /submit-lead/page.tsx      # Public Lead Submission Form (No Auth)
+      # Note: The API response includes the assigned agent details (data.assigned_user).
+      # Display a success message like: "Thank you! [Agent Name] will connect with you shortly."
 /components
   /ui                        # Shadcn UI Components
   /forms                     # Reusable Form Components
@@ -130,7 +132,7 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
 | | Approve Budget | `PATCH` | `/api/v1/budgets/:id/approve` | Finance |
 | | Upload Proof | `POST` | `/api/v1/proofs` | Auth User |
 | | Verify Proof | `PATCH` | `/api/v1/proofs/:id/verify` | Finance |
-| **Leads** | Public Submit | `POST` | `/api/v1/leads/submit` | Public |
+| | Public Submit | `POST` | `/api/v1/leads/submit` | Public | *Returns `assigned_user` details & `lead_id`* |
 | | Create Lead | `POST` | `/api/v1/leads` | Auth User |
 | | | | | *Returns `lead_reference_id` (e.g., egsp-admission-20251212-123456)* |
 | | List Leads | `GET` | `/api/v1/leads` | Auth User (Scoped) |
@@ -152,11 +154,19 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
 | | Live Calls | `GET` | `/api/v1/smartflo/live-calls` | Admission Manager |
 | | Call Records | `GET` | `/api/v1/smartflo/call-records` | Auth User (Scoped) |
 | | Monitor/Barge | `POST` | `/api/v1/smartflo/call-operation` | Admission Manager |
+| **Admin Controls** | Update User | `PUT` | `/api/v1/users/:id` | Super Admin |
+| | Delete User | `DELETE` | `/api/v1/users/:id` | Super Admin | *Query `?type=hard` for permanent delete* |
+| | Delete Campaign | `DELETE` | `/api/v1/campaigns/:id` | Super Admin | *Query `?type=hard` for permanent delete* |
+| | Delete Budget | `DELETE` | `/api/v1/budgets/:id` | Super Admin | *Query `?type=soft` or `hard`* |
+| | Delete Asset | `DELETE` | `/api/v1/assets/:id` | Super Admin | *Query `?type=soft` or `hard`* |
 
 ### G. User Management Updates (`/users`)
 *   **Create/Edit User Form**:
     *   Add fields for **Smartflo Agent Number** (e.g., `12345`) and **Caller ID** (DID).
     *   These are crucial for the "Click-to-Call" feature to work seamlessly without manual input every time.
+*   **Admin Capabilities**:
+    *   **User Edit**: Update name, role, status, and assignment weightage.
+    *   **User Delete**: Provide generic "Delete" button (Soft Delete) and "Delete Permanently" (Hard Delete - restricted to Super Admin).
 | **Analytics** | Admin Stats | `GET` | `/api/v1/analytics/admin` | Super Admin |
 | | Marketing Stats | `GET` | `/api/v1/analytics/marketing` | Marketing Manager |
 | | Admission Stats | `GET` | `/api/v1/analytics/admission` | Admission Manager |

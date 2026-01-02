@@ -17,7 +17,7 @@ const register = async (req, res) => {
       KeyConditionExpression: "email = :email",
       ExpressionAttributeValues: { ":email": email }
     });
-    
+
     const userCheck = await docClient.send(checkUserCommand);
     if (userCheck.Items.length > 0) {
       return res.status(400).json({ message: 'User already exists' });
@@ -90,14 +90,14 @@ const login = async (req, res) => {
     // Get Role Name
     let roleName = 'Unknown';
     if (user.role_id) {
-        const roleCommand = new GetCommand({
-            TableName: ROLES_TABLE,
-            Key: { id: user.role_id }
-        });
-        const roleResult = await docClient.send(roleCommand);
-        if (roleResult.Item) {
-            roleName = roleResult.Item.name;
-        }
+      const roleCommand = new GetCommand({
+        TableName: ROLES_TABLE,
+        Key: { id: user.role_id }
+      });
+      const roleResult = await docClient.send(roleCommand);
+      if (roleResult.Item) {
+        roleName = roleResult.Item.name;
+      }
     }
 
     // Generate tokens
@@ -106,10 +106,10 @@ const login = async (req, res) => {
 
     // Send Refresh Token in HTTP-Only Cookie
     res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
-        sameSite: 'strict', // Prevent CSRF
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
+      sameSite: 'strict', // Prevent CSRF
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
     res.json({
@@ -136,12 +136,12 @@ const getProfile = async (req, res) => {
       TableName: USERS_TABLE,
       Key: { id: req.user.id }
     });
-    
+
     const result = await docClient.send(command);
     if (!result.Item) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     const user = result.Item;
     delete user.password_hash;
     res.json(user);
@@ -158,7 +158,7 @@ const getUsers = async (req, res) => {
       ProjectionExpression: "id, #name, email, role_id, created_at, #status",
       ExpressionAttributeNames: { "#name": "name", "#status": "status" }
     });
-    
+
     const result = await docClient.send(command);
     res.json(result.Items);
   } catch (error) {
@@ -178,7 +178,7 @@ const createUser = async (req, res) => {
       KeyConditionExpression: "email = :email",
       ExpressionAttributeValues: { ":email": email }
     });
-    
+
     const userCheck = await docClient.send(checkUserCommand);
     if (userCheck.Items.length > 0) {
       return res.status(400).json({ message: 'User already exists' });
@@ -187,18 +187,18 @@ const createUser = async (req, res) => {
     // Resolve Role Name to ID
     let roleId = null;
     if (role) {
-        const roleScan = new ScanCommand({
-            TableName: ROLES_TABLE,
-            FilterExpression: "#name = :name",
-            ExpressionAttributeNames: { "#name": "name" },
-            ExpressionAttributeValues: { ":name": role }
-        });
-        const roleResult = await docClient.send(roleScan);
-        if (roleResult.Items.length > 0) {
-            roleId = roleResult.Items[0].id;
-        } else {
-            return res.status(400).json({ message: `Role '${role}' not found` });
-        }
+      const roleScan = new ScanCommand({
+        TableName: ROLES_TABLE,
+        FilterExpression: "#name = :name",
+        ExpressionAttributeNames: { "#name": "name" },
+        ExpressionAttributeValues: { ":name": role }
+      });
+      const roleResult = await docClient.send(roleScan);
+      if (roleResult.Items.length > 0) {
+        roleId = roleResult.Items[0].id;
+      } else {
+        return res.status(400).json({ message: `Role '${role}' not found` });
+      }
     }
 
     // Hash password
@@ -240,73 +240,191 @@ const createUser = async (req, res) => {
 };
 
 const refreshToken = async (req, res) => {
-    const cookies = req.cookies;
-    if (!cookies?.refreshToken) return res.status(401).json({ message: 'Refresh Token required' });
+  const cookies = req.cookies;
+  if (!cookies?.refreshToken) return res.status(401).json({ message: 'Refresh Token required' });
 
-    const refreshToken = cookies.refreshToken;
+  const refreshToken = cookies.refreshToken;
 
-    try {
-        const decoded = verifyRefreshToken(refreshToken);
-        
-        // Find user to ensure they still exist and get current role
-        const command = new GetCommand({
-            TableName: USERS_TABLE,
-            Key: { id: decoded.id }
-        });
-        const result = await docClient.send(command);
-        
-        if (!result.Item) return res.status(403).json({ message: 'User not found' });
-        
-        const user = result.Item;
+  try {
+    const decoded = verifyRefreshToken(refreshToken);
 
-        // Get Role Name
-        let roleName = 'Unknown';
-        if (user.role_id) {
-            const roleCommand = new GetCommand({
-                TableName: ROLES_TABLE,
-                Key: { id: user.role_id }
-            });
-            const roleResult = await docClient.send(roleCommand);
-            if (roleResult.Item) {
-                roleName = roleResult.Item.name;
-            }
-        }
+    // Find user to ensure they still exist and get current role
+    const command = new GetCommand({
+      TableName: USERS_TABLE,
+      Key: { id: decoded.id }
+    });
+    const result = await docClient.send(command);
 
-        const accessToken = generateAccessToken({ ...user, role_name: roleName });
+    if (!result.Item) return res.status(403).json({ message: 'User not found' });
 
-        res.json({ accessToken });
-    } catch (error) {
-        console.error(error);
-        return res.status(403).json({ message: 'Invalid Refresh Token' });
+    const user = result.Item;
+
+    // Get Role Name
+    let roleName = 'Unknown';
+    if (user.role_id) {
+      const roleCommand = new GetCommand({
+        TableName: ROLES_TABLE,
+        Key: { id: user.role_id }
+      });
+      const roleResult = await docClient.send(roleCommand);
+      if (roleResult.Item) {
+        roleName = roleResult.Item.name;
+      }
     }
+
+    const accessToken = generateAccessToken({ ...user, role_name: roleName });
+
+    res.json({ accessToken });
+  } catch (error) {
+    console.error(error);
+    return res.status(403).json({ message: 'Invalid Refresh Token' });
+  }
 };
 
 const toggleAvailability = async (req, res, next) => {
-    const { id } = req.user; // From auth middleware
-    const { is_available } = req.body;
+  const { id } = req.user; // From auth middleware
+  const { is_available } = req.body;
 
-    if (typeof is_available !== 'boolean') {
-        return res.status(400).json({ message: 'is_available must be a boolean' });
-    }
+  if (typeof is_available !== 'boolean') {
+    return res.status(400).json({ message: 'is_available must be a boolean' });
+  }
 
-    try {
-        const command = new UpdateCommand({
-            TableName: USERS_TABLE,
-            Key: { id },
-            UpdateExpression: "SET is_available = :status, updated_at = :time",
-            ExpressionAttributeValues: {
-                ":status": is_available,
-                ":time": getISTTimestamp()
-            },
-            ReturnValues: "ALL_NEW"
-        });
+  try {
+    const command = new UpdateCommand({
+      TableName: USERS_TABLE,
+      Key: { id },
+      UpdateExpression: "SET is_available = :status, updated_at = :time",
+      ExpressionAttributeValues: {
+        ":status": is_available,
+        ":time": getISTTimestamp()
+      },
+      ReturnValues: "ALL_NEW"
+    });
 
-        const result = await docClient.send(command);
-        res.json({ message: 'Availability updated', user: result.Attributes });
-    } catch (error) {
-        console.error('Toggle Availability Error:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
+    const result = await docClient.send(command);
+    res.json({ message: 'Availability updated', user: result.Attributes });
+  } catch (error) {
+    console.error('Toggle Availability Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
-module.exports = { register, login, getProfile, getUsers, createUser, refreshToken, toggleAvailability };
+// Update User
+const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, role, phone, designation, status, is_available, weightage, active_leads_count } = req.body;
+
+    const getCommand = new GetCommand({
+      TableName: USERS_TABLE,
+      Key: { id }
+    });
+    const getResult = await docClient.send(getCommand);
+    if (!getResult.Item) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const updates = {};
+    if (name) updates.name = name;
+    if (email) updates.email = email; // Note: Updating email might break login if index isn't updated, but assuming standard update
+    if (phone) updates.phone = phone;
+    if (designation) updates.designation = designation;
+    if (status) updates.status = status;
+    if (is_available !== undefined) updates.is_available = is_available;
+    if (weightage) updates.weightage = weightage;
+    if (active_leads_count !== undefined) updates.active_leads_count = active_leads_count;
+
+    // Role update logic
+    if (role) {
+      const roleScan = new ScanCommand({
+        TableName: ROLES_TABLE,
+        FilterExpression: "#name = :name",
+        ExpressionAttributeNames: { "#name": "name" },
+        ExpressionAttributeValues: { ":name": role }
+      });
+      const roleResult = await docClient.send(roleScan);
+      if (roleResult.Items.length > 0) {
+        updates.role_id = roleResult.Items[0].id;
+      } else {
+        return res.status(400).json({ message: `Role '${role}' not found` });
+      }
+    }
+
+    updates.updated_at = getISTTimestamp();
+
+    // Construct UpdateExpression
+    let updateExp = "set";
+    const expNames = {};
+    const expValues = {};
+
+    Object.keys(updates).forEach((key, index) => {
+      const attrName = `#attr${index}`;
+      const attrVal = `:val${index}`;
+      updateExp += ` ${attrName} = ${attrVal},`;
+      expNames[attrName] = key;
+      expValues[attrVal] = updates[key];
+    });
+
+    // Remove trailing comma
+    updateExp = updateExp.slice(0, -1);
+
+    const command = new UpdateCommand({
+      TableName: USERS_TABLE,
+      Key: { id },
+      UpdateExpression: updateExp,
+      ExpressionAttributeNames: expNames,
+      ExpressionAttributeValues: expValues,
+      ReturnValues: "ALL_NEW"
+    });
+
+    const result = await docClient.send(command);
+    const updatedUser = result.Attributes;
+    delete updatedUser.password_hash;
+
+    res.json({ message: 'User updated successfully', user: updatedUser });
+  } catch (error) {
+    console.error('Update User Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Delete User
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type } = req.query; // 'hard' or 'soft'
+
+    if (type === 'hard') {
+      // Hard Delete - restricted to Super Admin (handled by RBAC usually, but double check safe)
+      if (req.user.role !== 'Super Admin') {
+        return res.status(403).json({ message: 'Only Super Admin can hard delete.' });
+      }
+
+      const { DeleteCommand } = require("@aws-sdk/lib-dynamodb");
+      const command = new DeleteCommand({
+        TableName: USERS_TABLE,
+        Key: { id }
+      });
+      await docClient.send(command);
+      return res.json({ message: 'User permanently deleted' });
+    } else {
+      // Soft Delete
+      const command = new UpdateCommand({
+        TableName: USERS_TABLE,
+        Key: { id },
+        UpdateExpression: "set status = :status, updated_at = :time",
+        ExpressionAttributeValues: {
+          ":status": "deleted",
+          ":time": getISTTimestamp()
+        }
+      });
+      await docClient.send(command);
+      return res.json({ message: 'User soft deleted (status set to deleted)' });
+    }
+  } catch (error) {
+    console.error('Delete User Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { register, login, getProfile, getUsers, createUser, refreshToken, toggleAvailability, updateUser, deleteUser };

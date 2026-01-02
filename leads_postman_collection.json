@@ -36,7 +36,42 @@
 							]
 						}
 					},
-					"response": []
+					"response": [
+						{
+							"name": "Success Response (Assigned)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Jane Smith\",\n    \"phone\": \"9876543211\",\n    \"email\": \"jane@example.com\",\n    \"admission_year\": \"2026\",\n    \"source_website\": \"egspec.org\",\n    \"college\": \"EGS Pillay Engineering College\",\n    \"course\": \"B.E CSE\",\n    \"state\": \"Tamil Nadu\",\n    \"district\": \"Nagapattinam\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/leads/submit",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"leads",
+										"submit"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Lead submitted and assigned successfully\",\n    \"data\": {\n        \"lead_id\": \"309a1c77-4088-424c-a487-28e2af1ee02e\",\n        \"assigned_user\": {\n            \"user_id\": \"uuid\",\n            \"name\": \"John Doe\",\n            \"role\": \"Admission Executive\",\n            \"email\": \"john.doe@company.com\",\n            \"phone\": \"+91XXXXXXXXXX\"\n        }\n    },\n    \"meta\": {\n        \"assignment_strategy\": \"weighted_equal_distribution\"\n    }\n}"
+						}
+					]
 				},
 				{
 					"name": "Create Lead (Internal)",
