@@ -265,7 +265,28 @@ const getLeadNotes = async (req, res) => {
     }
 };
 
+// 13. Bulk Transfer
+const bulkTransferLeads = async (req, res) => {
+    try {
+        const { lead_ids, new_agent_id } = req.body;
+
+        if (!lead_ids || !Array.isArray(lead_ids) || lead_ids.length === 0) {
+            return sendError(res, { message: 'lead_ids array is required' }, 'Bulk Transfer', 400);
+        }
+        if (!new_agent_id) {
+            return sendError(res, { message: 'new_agent_id is required' }, 'Bulk Transfer', 400);
+        }
+
+        const result = await leadService.bulkAssignLeads(lead_ids, new_agent_id);
+
+        sendSuccess(res, result, 'Bulk transfer completed');
+    } catch (error) {
+        sendError(res, error, 'Bulk Transfer');
+    }
+};
+
 module.exports = {
     createLead, getLeads, initiateCall, submitLead, addNote, getLeadNotes,
-    transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead
+    transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead,
+    bulkTransferLeads
 };

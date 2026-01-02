@@ -152,10 +152,28 @@ const deleteLead = async (id, type = 'soft') => {
     }
 };
 
+const bulkAssignLeads = async (leadIds, newAgentId) => {
+    // 1. Verify New Agent Exists (Optional but good) - Skipping for speed/consistency with other methods or add check if needed.
+    // For now, assuming caller knows valid UUID.
+
+    // 2. Perform Parallel Updates
+    // Since updateLeadInDB performs a Read-Modify-Write, parallelizing is efficient.
+    const updatePromises = leadIds.map(id => updateLeadInDB(id, { assigned_to: newAgentId }));
+
+    // 3. Wait for all
+    // We could use allSettled to report partials, but for now Promise.all for simplicity
+    const results = await Promise.all(updatePromises);
+
+    // Filter out nulls (failed/not found)
+    const successCount = results.filter(r => r).length;
+    return { successCount, total: leadIds.length };
+};
+
 module.exports = {
     createLeadInDB,
     getLeadsFromDB,
     getLeadById,
     updateLeadInDB,
-    deleteLead
+    deleteLead,
+    bulkAssignLeads
 };

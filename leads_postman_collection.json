@@ -289,6 +289,41 @@
 					"response": []
 				},
 				{
+					"name": "Bulk Transfer Leads",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"lead_ids\": [\"{{lead_id}}\"],\n    \"new_agent_id\": \"{{new_agent_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/leads/bulk-transfer",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"leads",
+								"bulk-transfer"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Update Lead Status",
 					"request": {
 						"method": "PATCH",
