@@ -1,8 +1,9 @@
 const { docClient } = require('../config/db');
-const { PutCommand, GetCommand, ScanCommand, UpdateCommand, DeleteCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { PutCommand, GetCommand, ScanCommand, UpdateCommand, DeleteCommand, QueryCommand, TransactWriteCommand } = require('@aws-sdk/lib-dynamodb');
 const { getISTTimestamp } = require('../utils/timeUtils');
 
 const { TABLE_NAME } = require('../models/leadModel');
+const { TABLE_NAME: USERS_TABLE } = require('../models/userModel');
 
 class LeadRepository {
     async create(lead) {
@@ -10,6 +11,35 @@ class LeadRepository {
             TableName: TABLE_NAME,
             Item: lead
         });
+        await docClient.send(command);
+        return lead;
+    }
+
+    async createWithAssignment(lead, userId) {
+        const timestamp = getISTTimestamp();
+
+        const command = new TransactWriteCommand({
+            TransactItems: [
+                {
+                    Put: {
+                        TableName: TABLE_NAME,
+                        Item: lead
+                    }
+                },
+                {
+                    Update: {
+                        TableName: USERS_TABLE,
+                        Key: { id: userId },
+                        UpdateExpression: "SET active_leads_count = active_leads_count + :inc, last_assigned_at = :time",
+                        ExpressionAttributeValues: {
+                            ":inc": 1,
+                            ":time": timestamp
+                        }
+                    }
+                }
+            ]
+        });
+
         await docClient.send(command);
         return lead;
     }
@@ -81,7 +111,7 @@ class LeadRepository {
             params.FilterExpression = Object.keys(filter)
                 .map((key, index) => `#field${index} = :value${index}`)
                 .join(' AND ');
-            
+
             params.ExpressionAttributeNames = {};
             params.ExpressionAttributeValues = {};
 
@@ -93,7 +123,7 @@ class LeadRepository {
 
         const command = new ScanCommand(params);
         const response = await docClient.send(command);
-        
+
         let nextCursor = null;
         if (response.LastEvaluatedKey) {
             nextCursor = Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString('base64');
@@ -107,7 +137,7 @@ class LeadRepository {
     }
 
     async delete(id) {
-         const command = new DeleteCommand({
+        const command = new DeleteCommand({
             TableName: TABLE_NAME,
             Key: { id }
         });

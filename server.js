@@ -9,10 +9,12 @@ const { errorHandler } = require('./src/middleware/errorHandler');
 
 const app = express();
 
+const config = require('./src/config/env');
+
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: true, // Allow all origins (reflects request origin)
+  origin: config.frontendUrl, // Restrict to frontend URL from env
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true
 }));

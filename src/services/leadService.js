@@ -15,7 +15,7 @@ const createLeadInDB = async (leadData, isInternal = false, creatorId = null) =>
             // Also check admission year/source if needed, but repository is simpler for now.
             // If strictly needed, we can add logic here to compare other fields from 'existing'
             if (existing.admission_year === leadData.admission_year) {
-                 return { isDuplicate: true, lead: existing };
+                return { isDuplicate: true, lead: existing };
             }
         }
     }
@@ -25,11 +25,12 @@ const createLeadInDB = async (leadData, isInternal = false, creatorId = null) =>
     let bestAgent = null;
 
     if (!assigned_to) {
+        // Only run auto-assignment algorithm if no specific agent is assigned
         bestAgent = await findBestAgent();
         if (bestAgent) {
             assigned_to = bestAgent.id;
             logger.info(`Auto-assigning lead to: ${bestAgent.name} (${bestAgent.id})`);
-         } else if (isInternal && creatorId) {
+        } else if (isInternal && creatorId) {
             assigned_to = creatorId;
             logger.warn('No available agents. Assigning to creator.');
         } else {
@@ -55,32 +56,32 @@ const createLeadInDB = async (leadData, isInternal = false, creatorId = null) =>
     };
 
     // 4. Persist
-    await leadRepository.create(newLead);
-    
-    // Note: The transactional update of Agent Stats has been decoupled for now.
-    // In strict Microservice/Repository pattern, we'd update agent stats separately 
-    // or use a dedicated method in UserRepository. 
-    // To keep it simple, we skip the User update here or add a specific method.
+    // Use atomic transaction if auto-assigned via algorithm
+    if (bestAgent && assigned_to === bestAgent.id) {
+        await leadRepository.createWithAssignment(newLead, assigned_to);
+    } else {
+        await leadRepository.create(newLead);
+    }
 
-    return { isDuplicate: false, lead: newLead };
+    return { isDuplicate: false, lead: newLead, assignedUser: bestAgent };
 };
 
 const getLeadsFromDB = async (filter = {}, limit = 20, cursor = null) => {
     // Add default filter
     const finalFilter = { ...filter };
-    
+
     // NOTE: LeadRepository.findAll handles basic filters. 
     // Complex 'is_deleted <> true' might need handling in Repository or here via simple field check
     // Current Repository implementation checks exact matches. 
     // We'll rely on the Repository to return everything matching 'filter' and filter is_deleted in memory if Repos lacks it,
     // OR update Repository to support operators.
     // For this step, let's assume Repository can handle simple KV pairs.
-    
+
     const result = await leadRepository.findAll(finalFilter, limit, cursor);
-    
+
     // In-memory filter for soft-delete if not handled by DB filter (since scan uses KV)
     // Actually, let's just pass `is_deleted: false` in filter from controller.
-    
+
     const items = result.items || [];
     items.sort((a, b) => parseISTTimestamp(b.created_at) - parseISTTimestamp(a.created_at));
 
@@ -110,10 +111,10 @@ const updateLeadInDB = async (id, updateData) => {
     // Repository expects: updateExpression, attrNames, attrValues
     // This logic is specific to DynamoDB, so arguably belongs in Repository. 
     // But Service prepares the business data.
-    
+
     // Simplification: Use Repository's update method if we build the expression here
     // OR just use Fetch-Merge-Save pattern which relies on Repository.create (overwrite)
-    
+
     const currentLead = await leadRepository.findById(id);
     if (!currentLead) return null;
 
@@ -133,7 +134,7 @@ const deleteLead = async (id, type = 'soft') => {
     } else {
         const lead = await leadRepository.findById(id);
         if (!lead) return null;
-        
+
         const softDeletedLead = {
             ...lead,
             is_deleted: true,

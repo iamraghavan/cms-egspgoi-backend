@@ -30,7 +30,7 @@ const createLead = async (req, res) => {
         };
 
         const result = await leadService.createLeadInDB(leadData, true, req.user.id);
-        
+
         sendSuccess(res, result.lead, 'Lead created successfully', 201);
     } catch (error) {
         sendError(res, error, 'Create Lead');
@@ -77,7 +77,23 @@ const submitLead = async (req, res) => {
             return sendSuccess(res, { lead_id: result.lead.id }, 'Lead already exists.', 200);
         }
 
-        sendSuccess(res, { lead_id: result.lead.id }, 'Lead submitted successfully', 201);
+        const responseData = { lead_id: result.lead.id };
+        const meta = {};
+        let message = 'Lead submitted successfully';
+
+        if (result.assignedUser) {
+            responseData.assigned_user = {
+                user_id: result.assignedUser.id,
+                name: result.assignedUser.name,
+                role: result.assignedUser.role_name,
+                email: result.assignedUser.email,
+                phone: result.assignedUser.phone
+            };
+            meta.assignment_strategy = 'weighted_equal_distribution';
+            message = 'Lead submitted and assigned successfully';
+        }
+
+        sendSuccess(res, responseData, message, 201, meta);
     } catch (error) {
         sendError(res, error, 'Submit Lead');
     }
@@ -112,11 +128,11 @@ const initiateCall = async (req, res) => {
 
         const callerId = req.user.caller_id || process.env.SMARTFLO_CALLER_ID || null;
         const lead = await leadService.getLeadById(id);
-        
+
         if (!lead) return sendError(res, { message: 'Lead not found' }, 'Initiate Call', 404);
 
         const destinationNumber = getNationalNumber(lead.phone) || lead.phone;
-        
+
         logger.info(`Initiating call for Lead ${id} to ${destinationNumber}`);
         await clickToCall(agentNumber, destinationNumber, callerId);
 
@@ -188,7 +204,7 @@ const updateLeadStatus = async (req, res) => {
 const deleteLead = async (req, res) => {
     try {
         const { id } = req.params;
-        const { type } = req.query; 
+        const { type } = req.query;
 
         if (type === 'hard' && req.user.role !== 'Super Admin') {
             return sendError(res, { message: 'Only Super Admin can hard delete.' }, 'Delete Lead', 403);
@@ -236,20 +252,20 @@ const getLeadNotes = async (req, res) => {
     try {
         const lead = await leadService.getLeadById(req.params.id);
         if (!lead) return sendError(res, { message: 'Lead not found' }, 'Get Notes', 404);
-        
+
         const notes = lead.notes || [];
         // Enrichment can stay in service or here. 
         // Keeping here for now as view-logic but leveraging helper.
         const userMap = await getUserNamesMap(notes.map(n => n.author_id));
         const enriched = notes.map(n => ({ ...n, author_name: userMap[n.author_id] || 'Unknown' }));
-        
+
         sendSuccess(res, enriched, 'Notes fetched');
     } catch (error) {
-         sendError(res, error, 'Get Lead Notes');
+        sendError(res, error, 'Get Lead Notes');
     }
 };
 
-module.exports = { 
+module.exports = {
     createLead, getLeads, initiateCall, submitLead, addNote, getLeadNotes,
     transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead
 };

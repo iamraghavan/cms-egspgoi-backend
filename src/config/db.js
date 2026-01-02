@@ -1,12 +1,12 @@
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient } = require("@aws-sdk/lib-dynamodb");
-require('dotenv').config();
+const config = require('./env');
 
 const client = new DynamoDBClient({
-  region: process.env.AWS_REGION,
+  region: config.aws.region,
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    accessKeyId: config.aws.accessKeyId,
+    secretAccessKey: config.aws.secretAccessKey,
   },
   // endpoint: process.env.DYNAMODB_ENDPOINT // Uncomment for local DynamoDB
 });
