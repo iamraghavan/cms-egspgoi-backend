@@ -141,7 +141,44 @@
 							]
 						}
 					},
-					"response": []
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/leads?limit=20&cursor=",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"leads"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "20"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"Leads fetched successfully\",\n    \"data\": [\n        {\n            \"id\": \"lead_uuid\",\n            \"name\": \"John Doe\",\n            \"assigned_to\": \"user_uuid\",\n            \"assigned_to_name\": \"Admission Manager\",\n            \"assigned_user\": {\n                \"id\": \"user_uuid\",\n                \"name\": \"Admission Manager\",\n                \"email\": \"manager@example.com\",\n                \"phone\": \"9876543210\",\n                \"role_id\": \"role_uuid\",\n                \"status\": \"active\",\n                \"is_available\": true\n            },\n            \"created_at\": \"2025-10-10T10:00:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"count\": 1\n    }\n}"
+						}
+					]
 				},
 				{
 					"name": "Initiate Call",

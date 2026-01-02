@@ -4,7 +4,7 @@ const logger = require('../utils/logger');
 const { getISTTimestamp, parseISTTimestamp } = require('../utils/timeUtils');
 const { generateLeadRef } = require('../utils/idGenerator');
 const { findBestAgent } = require('./assignmentService');
-const { getUserNamesMap } = require('../utils/userHelper');
+const { getUserNamesMap, getUsersDetailsMap } = require('../utils/userHelper');
 
 // Use repository instead of direct DB calls
 const createLeadInDB = async (leadData, isInternal = false, creatorId = null) => {
@@ -87,13 +87,20 @@ const getLeadsFromDB = async (filter = {}, limit = 20, cursor = null) => {
 
     // Enrich
     const userIds = items.map(t => t.assigned_to).concat(items.map(t => t.created_by));
-    const userMap = await getUserNamesMap(userIds);
+    const userMap = await getUsersDetailsMap(userIds);
 
-    const enrichedItems = items.map(item => ({
-        ...item,
-        assigned_to_name: userMap[item.assigned_to] || null,
-        created_by_name: userMap[item.created_by] || null
-    }));
+    const enrichedItems = items.map(item => {
+        const assignedUser = userMap[item.assigned_to];
+        const createdByUser = userMap[item.created_by];
+
+        return {
+            ...item,
+            assigned_to_name: assignedUser ? assignedUser.name : null,
+            created_by_name: createdByUser ? createdByUser.name : null,
+            assigned_user: assignedUser || null,
+            created_by_user: createdByUser || null
+        };
+    });
 
     return {
         items: enrichedItems,

@@ -18,7 +18,7 @@ const getUserNamesMap = async (userIds) => {
     // For now, assuming < 100 unique agents per page.
 
     const keys = uniqueIds.map(id => ({ id }));
-    
+
     // Construct keys for BatchGet
     const command = new BatchGetCommand({
         RequestItems: {
@@ -33,7 +33,7 @@ const getUserNamesMap = async (userIds) => {
     try {
         const result = await docClient.send(command);
         const users = result.Responses[USERS_TABLE] || [];
-        
+
         const userMap = {};
         users.forEach(user => {
             userMap[user.id] = user.name;
@@ -45,4 +45,43 @@ const getUserNamesMap = async (userIds) => {
     }
 };
 
-module.exports = { getUserNamesMap };
+/**
+ * Fetches full user details for a list of IDs.
+ * @param {Array<string>} userIds - List of user UUIDs.
+ * @returns {Object} - Map of userId -> userObject
+ */
+const getUsersDetailsMap = async (userIds) => {
+    if (!userIds || userIds.length === 0) return {};
+
+    const uniqueIds = [...new Set(userIds)].filter(id => id);
+    if (uniqueIds.length === 0) return {};
+
+    const keys = uniqueIds.map(id => ({ id }));
+
+    // Fetch more fields: id, name, email, phone, role_id, status, is_available
+    const command = new BatchGetCommand({
+        RequestItems: {
+            [USERS_TABLE]: {
+                Keys: keys,
+                ProjectionExpression: 'id, #name, email, phone, role_id, #status, is_available',
+                ExpressionAttributeNames: { '#name': 'name', '#status': 'status' }
+            }
+        }
+    });
+
+    try {
+        const result = await docClient.send(command);
+        const users = result.Responses[USERS_TABLE] || [];
+
+        const userMap = {};
+        users.forEach(user => {
+            userMap[user.id] = user;
+        });
+        return userMap;
+    } catch (error) {
+        console.error("Error fetching user details:", error);
+        return {};
+    }
+};
+
+module.exports = { getUserNamesMap, getUsersDetailsMap };
