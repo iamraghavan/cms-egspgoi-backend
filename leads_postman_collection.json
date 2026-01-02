@@ -350,6 +350,38 @@
 					"response": []
 				},
 				{
+					"name": "Get Agents List",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users?type=agent",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "agent",
+									"description": "Filter by Admission Manager/Executive roles"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Update Lead Status",
 					"request": {
 						"method": "PATCH",

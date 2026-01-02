@@ -153,13 +153,58 @@ const getProfile = async (req, res) => {
 
 const getUsers = async (req, res) => {
   try {
-    const command = new ScanCommand({
-      TableName: USERS_TABLE,
-      ProjectionExpression: "id, #name, email, role_id, created_at, #status",
-      ExpressionAttributeNames: { "#name": "name", "#status": "status" }
-    });
+    const { type } = req.query;
 
+    let filterExpression = null;
+    let expressionAttributeNames = { "#name": "name", "#status": "status" };
+    let expressionAttributeValues = null;
+
+    if (type === 'agent') {
+      // 1. Get Role IDs for 'Admission Manager' and 'Admission Executive'
+      const roleScan = new ScanCommand({
+        TableName: ROLES_TABLE,
+        FilterExpression: "#name IN (:r1, :r2)",
+        ExpressionAttributeNames: { "#name": "name" },
+        ExpressionAttributeValues: { ":r1": "Admission Manager", ":r2": "Admission Executive" }
+      });
+      const roleResult = await docClient.send(roleScan);
+
+      if (roleResult.Items.length > 0) {
+        const roleIds = roleResult.Items.map(r => r.id);
+
+        // 2. Filter Users by these Role IDs
+        // DynamoDB Scan Filter with IN
+        filterExpression = "role_id IN (" + roleIds.map((_, i) => `:role${i}`).join(", ") + ")";
+        expressionAttributeValues = {};
+        roleIds.forEach((id, i) => {
+          expressionAttributeValues[`:role${i}`] = id;
+        });
+      } else {
+        // No agent roles found, return empty
+        return res.json([]);
+      }
+    }
+
+    const scanParams = {
+      TableName: USERS_TABLE,
+      ProjectionExpression: "id, #name, email, role_id, created_at, #status, is_available", // Added is_available
+      ExpressionAttributeNames: expressionAttributeNames
+    };
+
+    if (filterExpression) {
+      scanParams.FilterExpression = filterExpression;
+      scanParams.ExpressionAttributeValues = expressionAttributeValues;
+    }
+
+    const command = new ScanCommand(scanParams);
     const result = await docClient.send(command);
+
+    // Enrich with Role Name for frontend convenience
+    // Fetch all roles to map names (optimized: we could just fetch the 2 agent roles if filtering, but for general listing we need all)
+    // For now, let's keep it simple and just return the list. Frontend might need role names.
+    // Let's do a quick fetch of roles if we didn't already.
+
+    // Actually, sticking to the requested feature first.
     res.json(result.Items);
   } catch (error) {
     console.error(error);
