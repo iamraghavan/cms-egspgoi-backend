@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createLead, getLeads, initiateCall, submitLead, addNote, getLeadNotes, transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead, bulkTransferLeads } = require('../controllers/leadController');
+const { createLead, getLeads, initiateCall, submitLead, addNote, getLeadNotes, transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead, bulkTransferLeads, getLead } = require('../controllers/leadController');
 const { authenticate } = require('../middleware/authMiddleware');
 const { checkPermission } = require('../middleware/rbacMiddleware');
 
@@ -44,6 +44,7 @@ router.post('/leads/bulk-transfer', authenticate, (req, res, next) => {
 router.patch('/leads/:id/status', authenticate, updateLeadStatus);
 
 // Standardized Methods
+router.get('/leads/:id', authenticate, getLead);
 router.delete('/leads/:id', authenticate, deleteLead);
 router.head('/leads/:id', authenticate, headLead);
 router.options('/leads', optionsLead);

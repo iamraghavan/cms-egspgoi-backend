@@ -285,8 +285,42 @@ const bulkTransferLeads = async (req, res) => {
     }
 };
 
+// 14. Get Lead By ID
+const getLead = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const lead = await leadService.getLeadById(id);
+
+        if (!lead || (lead.is_deleted && req.user.role !== 'Super Admin')) {
+            return sendError(res, { message: 'Lead not found' }, 'Get Lead', 404);
+        }
+
+        // Enrich with assigned user details
+        const { getUsersDetailsMap } = require('../utils/userHelper');
+        let enrichedLead = { ...lead };
+
+        if (lead.assigned_to) {
+            const userMap = await getUsersDetailsMap([lead.assigned_to]);
+            const assignedUser = userMap[lead.assigned_to];
+            enrichedLead.assigned_user = assignedUser || null;
+            enrichedLead.assigned_to_name = assignedUser ? assignedUser.name : null;
+        }
+
+        if (lead.created_by) {
+            const userMap = await getUsersDetailsMap([lead.created_by]);
+            const createdByUser = userMap[lead.created_by];
+            enrichedLead.created_by_user = createdByUser || null;
+            enrichedLead.created_by_name = createdByUser ? createdByUser.name : null;
+        }
+
+        sendSuccess(res, enrichedLead, 'Lead fetched successfully');
+    } catch (error) {
+        sendError(res, error, 'Get Lead');
+    }
+};
+
 module.exports = {
     createLead, getLeads, initiateCall, submitLead, addNote, getLeadNotes,
     transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead,
-    bulkTransferLeads
+    bulkTransferLeads, getLead
 };

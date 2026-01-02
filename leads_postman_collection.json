@@ -181,6 +181,32 @@
 					]
 				},
 				{
+					"name": "Get Lead Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/leads/{{lead_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"leads",
+								"{{lead_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Initiate Call",
 					"request": {
 						"method": "POST",
