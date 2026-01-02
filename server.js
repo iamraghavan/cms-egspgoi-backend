@@ -14,8 +14,8 @@ const config = require('./src/config/env');
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: config.frontendUrl, // Restrict to frontend URL from env
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  origin: true, // Allow any origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   credentials: true
 }));
 app.use(morgan('dev'));
