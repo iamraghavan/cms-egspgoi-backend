@@ -35,16 +35,7 @@ const handleWebhook = async (req, res) => {
         // TODO: Implement logic to update Lead "Last Call Status" or add a "Call Log" note.
         // For now, we just acknowledge receipt as this is a new feature.
 
-        // Broadcast Call Status (e.g. for Live Monitor)
-        const { broadcast } = require('../services/socketService');
-        broadcast('call_status', {
-            agent: agentNumber,
-            customer: customerNumber,
-            status: status,
-            direction: direction,
-            duration: duration,
-            timestamp: getISTTimestamp()
-        });
+        // Real-time call status broadcast removed.
 
         res.status(200).send('Webhook Received');
     } catch (error) {

@@ -61,18 +61,12 @@ const createLeadInDB = async (leadData, isInternal = false, creatorId = null) =>
     // Use atomic transaction if auto-assigned via algorithm
     if (bestAgent && assigned_to === bestAgent.id) {
         await leadRepository.createWithAssignment(newLead, assigned_to);
-
-        // Emit Socket Event to Assigned Agent
-        emitToUser(assigned_to, 'lead_assigned', {
-            message: `New Lead Assigned: ${newLead.name}`,
-            lead: newLead
-        });
+        // Real-time notification removed
     } else {
         await leadRepository.create(newLead);
     }
 
-    // Broadcast creation event (e.g. for Admins/Dashboard)
-    broadcast('lead_created', { lead: newLead });
+    // Real-time broadcast removed
 
     return { isDuplicate: false, lead: newLead, assignedUser: bestAgent };
 };

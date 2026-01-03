@@ -14,14 +14,8 @@ const { ListTablesCommand } = require("@aws-sdk/client-dynamodb");
 
 const PORT = process.env.PORT || 3000;
 
-const http = require('http');
-const { initSocket } = require('./src/services/socketService');
-
-// Create HTTP server
-const server = http.createServer(app);
-
-// Initialize Socket.io
-initSocket(server);
+// Initialize Socket.io - REMOVED for Pusher
+// initSocket(server);
 
 const startServer = async () => {
   try {

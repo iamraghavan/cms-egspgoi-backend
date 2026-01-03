@@ -220,28 +220,4 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
     *   Frontend should route requests through the backend proxy (`/api/v1/smartflo/...`) rather than calling Smartflo directly to avoid exposing the key.
 
 
-### J. Real-Time Integration (Socket.io)
-*   **Initialization (Vercel Compatible)**:
-    *   Install `socket.io-client`.
-    *   **Crucial**: Must use `transports: ['polling']` and correct path if needed.
-    *   **Auth**: Pass JWT as usual.
-        ```javascript
-        const socket = io(import.meta.env.VITE_API_URL, {
-          path: '/socket.io/', // Ensure this matches backend (default is /socket.io/)
-          transports: ["polling"], // FORCE polling for Vercel Serverless
-          auth: { token: accessToken }
-        });
-        ```
-*   **Events to Listen For**:
-    1.  `lead_assigned`:
-        *   **Payload**: `{ message: string, lead: LeadObject }`
-        *   **Action**: Show Toast "New Lead Assigned: [Name]" and prepend lead to Kanban/List without refresh.
-    2.  `lead_created` (Admins/Managers):
-        *   **Payload**: `{ lead: LeadObject }`
-        *   **Action**: Update dashboard counters or "Recent Leads" widget.
-    3.  `call_status` (Live Monitor):
-        *   **Payload**: `{ agent: string, customer: string, status: string, duration: number }`
-        *   **Action**: Update Live Call Dashboard row in real-time.
-    4.  `bulk_lead_assigned`:
-        *   **Payload**: `{ count: number }`
-        *   **Action**: Refresh list or show summary toast.
+
