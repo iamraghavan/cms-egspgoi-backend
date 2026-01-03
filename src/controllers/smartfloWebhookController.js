@@ -15,7 +15,7 @@ const handleWebhook = async (req, res) => {
         // We are primarily interested in matching calls to Leads.
         // Smartflo webhooks usually send `$call_to_number` or `$customer_number`
         // Note: The params sent by Smartflo might be in the body directly.
-        
+
         // Extract key info based on common patterns in docs
         const customerNumber = eventData.customer_number || eventData.call_to_number || eventData.destination_number;
         const agentNumber = eventData.agent_number || eventData.answered_agent_number;
@@ -31,10 +31,21 @@ const handleWebhook = async (req, res) => {
         // Normalize customer number for lookup (e.g. remove +91 prefix matching)
         // This is tricky because lead phone is E.164. 
         // We'll search using a precise match if possible, or Scan.
-        
+
         // TODO: Implement logic to update Lead "Last Call Status" or add a "Call Log" note.
         // For now, we just acknowledge receipt as this is a new feature.
-        
+
+        // Broadcast Call Status (e.g. for Live Monitor)
+        const { broadcast } = require('../services/socketService');
+        broadcast('call_status', {
+            agent: agentNumber,
+            customer: customerNumber,
+            status: status,
+            direction: direction,
+            duration: duration,
+            timestamp: getISTTimestamp()
+        });
+
         res.status(200).send('Webhook Received');
     } catch (error) {
         logger.error('Webhook Error:', error);

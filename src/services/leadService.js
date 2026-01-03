@@ -3,8 +3,11 @@ const leadRepository = require('../repositories/leadRepository');
 const logger = require('../utils/logger');
 const { getISTTimestamp, parseISTTimestamp } = require('../utils/timeUtils');
 const { generateLeadRef } = require('../utils/idGenerator');
-const { findBestAgent } = require('./assignmentService');
-const { getUserNamesMap, getUsersDetailsMap } = require('../utils/userHelper');
+const assignmentService = require('./assignmentService');
+const leadRepository = require('../repositories/leadRepository');
+const { getUsersDetailsMap } = require('../utils/userHelper'); // Helper
+const { emitToUser, broadcast } = require('./socketService'); // Socket Service
+const { publishEvent } = require('./mqProducer'); // MQ Producer
 
 // Use repository instead of direct DB calls
 const createLeadInDB = async (leadData, isInternal = false, creatorId = null) => {
@@ -59,9 +62,24 @@ const createLeadInDB = async (leadData, isInternal = false, creatorId = null) =>
     // Use atomic transaction if auto-assigned via algorithm
     if (bestAgent && assigned_to === bestAgent.id) {
         await leadRepository.createWithAssignment(newLead, assigned_to);
+
+        // Emit Socket Event to Assigned Agent
+        emitToUser(assigned_to, 'lead_assigned', {
+            message: `New Lead Assigned: ${newLead.name}`,
+            lead: newLead
+        });
     } else {
         await leadRepository.create(newLead);
     }
+
+    // Broadcast creation event (e.g. for Admins/Dashboard)
+    broadcast('lead_created', { lead: newLead });
+
+    // Publish to Kafka for async automation (Email, SMS hooks)
+    await publishEvent('LEAD_EVENTS', {
+        type: 'LEAD_CREATED',
+        data: newLead
+    });
 
     return { isDuplicate: false, lead: newLead, assignedUser: bestAgent };
 };
@@ -166,6 +184,15 @@ const bulkAssignLeads = async (leadIds, newAgentId) => {
 
     // Filter out nulls (failed/not found)
     const successCount = results.filter(r => r).length;
+
+    // Notify the Agent about bulk assignment
+    if (successCount > 0) {
+        emitToUser(newAgentId, 'bulk_lead_assigned', {
+            message: `${successCount} New Leads Assigned via Bulk Transfer`,
+            count: successCount
+        });
+    }
+
     return { successCount, total: leadIds.length };
 };
 
