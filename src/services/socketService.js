@@ -8,10 +8,24 @@ let io;
  * @param {Object} server - HTTP Server instance
  */
 const initSocket = (server) => {
-    // Configure CORS for Socket.io matching the Express CORS
+    if (io) {
+        console.log("Socket.io already initialized!");
+        return io;
+    }
+
+    // Configure CORS and Path for Vercel
+    // We add /api/socket.io as the path because Vercel rewrites usually go to /api/...
+    // But since the user has a catch-all rewrite to /api/index.js, default /socket.io might work IF the server intercepts it.
+    // To be safe and explicit for Vercel, we often use a custom path or rely on the rewrite.
+    // Given the user's "routes": [{"src": "/(.*)", "dest": "/api/index.js"}], 
+    // any request to /socket.io/... hits api/index.js.
+
     io = socketIo(server, {
+        path: '/socket.io', // Standard path, but handled by the one server instance
+        transports: ['polling'], // Force polling for serverless stability
+        addTrailingSlash: false,
         cors: {
-            origin: true, // Allow all or match config.frontendUrl
+            origin: "*", // Allow all for now to avoid CORS headaches on Vercel
             methods: ["GET", "POST"],
             credentials: true
         }
