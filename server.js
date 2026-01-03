@@ -10,6 +10,7 @@ const { errorHandler } = require('./src/middleware/errorHandler');
 const app = express();
 
 const config = require('./src/config/env');
+const { conditionalRequestMiddleware } = require('./src/middleware/conditionalRequest');
 
 const compression = require('compression');
 const { cacheMiddleware } = require('./src/middleware/cacheMiddleware');
@@ -17,6 +18,8 @@ const { cacheMiddleware } = require('./src/middleware/cacheMiddleware');
 // ...
 
 // Middleware
+app.set('etag', 'strong'); // Enable strong ETag generation
+app.use(conditionalRequestMiddleware); // Encourage conditional requests
 app.use(compression()); // Compress all responses
 app.use(helmet({
   contentSecurityPolicy: {

@@ -99,20 +99,25 @@ const submitLead = async (req, res) => {
     }
 };
 
+// ...
+const { getPaginationParams, formatPaginationMeta } = require('../utils/paginationUtils');
+
+// ...
+
 // 3. Get Leads
 const getLeads = async (req, res) => {
     try {
-        const { limit, cursor } = req.query;
-        const limitNum = parseInt(limit) || 20;
+        const { limit, cursor } = getPaginationParams(req.query);
 
         const filter = {};
         if (req.user.role !== 'Super Admin' && req.user.role !== 'Admission Manager') {
             filter.assigned_to = req.user.id;
         }
 
-        const result = await leadService.getLeadsFromDB(filter, limitNum, cursor);
+        const result = await leadService.getLeadsFromDB(filter, limit, cursor);
 
-        sendSuccess(res, result.items, 'Leads fetched successfully', 200, { cursor: result.cursor, count: result.count });
+        const meta = formatPaginationMeta(result.cursor, result.count, limit);
+        sendSuccess(res, result.items, 'Leads fetched successfully', 200, meta);
     } catch (error) {
         sendError(res, error, 'Get Leads');
     }
