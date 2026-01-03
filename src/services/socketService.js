@@ -21,17 +21,19 @@ const initSocket = (server) => {
     // any request to /socket.io/... hits api/index.js.
 
     io = socketIo(server, {
-        path: '/socket.io', // Standard path, but handled by the one server instance
-        transports: ['polling'], // Force polling for serverless stability
+        path: '/socket.io', // Standard path
+        transports: ['polling'], // Force polling
         addTrailingSlash: false,
         cors: {
-            origin: "*", // Allow all for now to avoid CORS headaches on Vercel
-            methods: ["GET", "POST"],
+            origin: "*", // Allow ALL
+            methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            allowedHeaders: ["content-type"],
             credentials: true
         }
     });
 
-    // Middleware for Auth
+    // Middleware for Auth - COMMENTED OUT FOR DEBUGGING/OPEN ACCESS
+    /*
     io.use((socket, next) => {
         const token = socket.handshake.auth.token || socket.handshake.query.token;
         if (!token) {
@@ -45,9 +47,13 @@ const initSocket = (server) => {
             next(new Error('Authentication error'));
         }
     });
+    */
 
     io.on('connection', (socket) => {
-        console.log(`Socket connected: ${socket.id} (User: ${socket.user.name}, Role: ${socket.user.role_name})`);
+        // Mock user for now since auth is disabled
+        socket.user = { id: 'anon', name: 'Anonymous', role_name: 'Guest' };
+
+        console.log(`Socket connected: ${socket.id} (User: ${socket.user.name})`);
 
         // Join room based on User ID for personal notifications
         socket.join(socket.user.id);
