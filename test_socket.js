@@ -3,7 +3,7 @@ const { io } = require("socket.io-client");
 const URL = "http://localhost:3000";
 const socket = io(URL, {
     auth: {
-        token: "YOUR_JWT_TOKEN_HERE" // Needs a valid token to work
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InRlc3QtdXNlci1pZCIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGVfaWQiOiJ0ZXN0LXJvbGUtaWQiLCJpYXQiOjE3Njc0MTU4NjgsImV4cCI6MTc2NzQxNjc2OH0.jALv47Bgq9mDF3f0qsqbJFk3xUdtXP3v0HYGhIKQTrQ" // Needs a valid token to work
     }
 });
 

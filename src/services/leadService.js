@@ -4,7 +4,7 @@ const logger = require('../utils/logger');
 const { getISTTimestamp, parseISTTimestamp } = require('../utils/timeUtils');
 const { generateLeadRef } = require('../utils/idGenerator');
 const assignmentService = require('./assignmentService');
-const leadRepository = require('../repositories/leadRepository');
+
 const { getUsersDetailsMap } = require('../utils/userHelper'); // Helper
 const { emitToUser, broadcast } = require('./socketService'); // Socket Service
 

@@ -36,6 +36,7 @@
   "devDependencies": {
     "aws-sdk-client-mock": "^4.1.0",
     "jest": "^30.2.0",
+    "socket.io-client": "^4.8.3",
     "supertest": "^7.1.4"
   }
 }
