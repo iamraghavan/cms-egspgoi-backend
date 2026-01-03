@@ -10,8 +10,10 @@ const getPaginationParams = (query, defaultLimit = 20, maxLimit = 100) => {
     if (limit > maxLimit) limit = maxLimit;
 
     const cursor = query.cursor || null;
+    const startDate = query.startDate || null;
+    const endDate = query.endDate || null;
 
-    return { limit, cursor };
+    return { limit, cursor, startDate, endDate };
 };
 
 /**

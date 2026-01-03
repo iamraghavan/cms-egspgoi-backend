@@ -71,23 +71,34 @@ const createLeadInDB = async (leadData, isInternal = false, creatorId = null) =>
     return { isDuplicate: false, lead: newLead, assignedUser: bestAgent };
 };
 
-const getLeadsFromDB = async (filter = {}, limit = 20, cursor = null) => {
+const getLeadsFromDB = async (filter = {}, limit = 20, cursor = null, startDate = null, endDate = null) => {
     // Add default filter
     const finalFilter = { ...filter };
 
-    // NOTE: LeadRepository.findAll handles basic filters. 
-    // Complex 'is_deleted <> true' might need handling in Repository or here via simple field check
-    // Current Repository implementation checks exact matches. 
-    // We'll rely on the Repository to return everything matching 'filter' and filter is_deleted in memory if Repos lacks it,
-    // OR update Repository to support operators.
-    // For this step, let's assume Repository can handle simple KV pairs.
-
+    // NOTE: DynamoDB Scan returns pages. We can only sort/filter the retrieved page.
     const result = await leadRepository.findAll(finalFilter, limit, cursor);
 
-    // In-memory filter for soft-delete if not handled by DB filter (since scan uses KV)
-    // Actually, let's just pass `is_deleted: false` in filter from controller.
+    let items = result.items || [];
 
-    const items = result.items || [];
+    // Date Filtering (In-Memory because DB format is custom string)
+    if (startDate || endDate) {
+        // Parse Filter Dates (Assuming input is YYYY-MM-DD or standard JS date)
+        // If users send DD/MM/YYYY, we might need parsing. 
+        // For now, assuming ISO string from frontend picker or compatible string.
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+
+        // Adjust end date to end of day if only date is provided
+        if (end) end.setHours(23, 59, 59, 999);
+
+        items = items.filter(item => {
+            const itemDate = parseISTTimestamp(item.created_at);
+            if (start && itemDate < start) return false;
+            if (end && itemDate > end) return false;
+            return true;
+        });
+    }
+
     items.sort((a, b) => parseISTTimestamp(b.created_at) - parseISTTimestamp(a.created_at));
 
     // Enrich
@@ -110,7 +121,7 @@ const getLeadsFromDB = async (filter = {}, limit = 20, cursor = null) => {
     return {
         items: enrichedItems,
         cursor: result.cursor,
-        count: result.count
+        count: result.count // Note: This count is ScannedCount or PageCount, not Total Filtered Count
     };
 };
 

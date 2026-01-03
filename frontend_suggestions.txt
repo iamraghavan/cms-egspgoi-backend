@@ -135,7 +135,7 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
 | | Public Submit | `POST` | `/api/v1/leads/submit` | Public | *Returns `assigned_user` details & `lead_id`* |
 | | Create Lead | `POST` | `/api/v1/leads` | Auth User |
 | | | | | *Returns `lead_reference_id` (e.g., egsp-admission-20251212-123456)* |
-| | List Leads | `GET` | `/api/v1/leads` | Auth User (Scoped) |
+| | List Leads | `GET` | `/api/v1/leads?startDate=...&endDate=...` | Auth User (Scoped) |
 | | Initiate Call | `POST` | `/api/v1/leads/:id/call` | Admin/Manager/Exec |
 | | Add Note | `POST` | `/api/v1/leads/:id/notes` | Auth User |
 | | Transfer Lead | `POST` | `/api/v1/leads/:id/transfer` | Admin/Manager |
@@ -185,39 +185,48 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
     *   **Action**: `PUT /api/v1/users/auth/settings` with payload `{ preferences: { ... } }`.
     *   **Storage**: Save these in local storage on login (`user.preferences`) to apply theme/currency globally.
 
-### I. API Response & Pagination Standard
-*   **Standard Response Format**:
+### I. API Response & Pagination Standard (Updated)
+*   **Standard Response Envelope**:
     ```json
     {
       "success": true,
       "message": "Operation successful",
-      "data": { ... }, // Payload
-      "meta": {        // Optional metadata (pagination)
-        "cursor": "base64string",
-        "count": 20
+      "data": { ... }, // Main Payload
+      "meta": {        // Metadata for lists
+        "next_cursor": "eyJpZCI6...==", // Pass this to ?cursor=... for next page
+        "has_more": true,
+        "count": 20,
+        "limit": 20
       }
     }
     ```
-*   **Pagination Implementation**:
-    *   API uses **Cursor-based pagination** (better for DynamoDB scalability).
-    *   **Request**: `GET /api/v1/leads?limit=20&cursor=...`
-    *   **Implementation**:
-        *   On first load, send `limit=20`.
-        *   Store `meta.cursor` from response.
-        *   "Load More" button sends `cursor={meta.cursor}`.
-    *   **TanStack Query**: Use `useInfiniteQuery` to handle this automatically using the `getNextPageParam` option.
+*   **Pagination Logic (Infinite Scroll using TanStack Query)**:
+    *   **Endpoint**: `GET /api/v1/leads?limit=20&startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
+    *   **Logic**:
+        ```typescript
+        useInfiniteQuery({
+          queryKey: ['leads'],
+          queryFn: ({ pageParam }) => axios.get('/api/v1/leads', { params: { cursor: pageParam, limit: 20 } }),
+          getNextPageParam: (lastPage) => lastPage.data.meta.next_cursor ?? undefined,
+        })
+        ```
 
-### I. Smartflo Call Management Updates (New)
-*   **Call Controls Section**:
-    *   **Hang-up Call**: Provide a simple form with a text input for `call_id` and a "Hang-up" button that triggers `POST /api/v1/smartflo/call/hangup`. Include loading states and toast notifications for success/failure.
-*   **Call Records Table**:
-    *   Create a paginated table viewing the results of `GET /api/v1/smartflo/call/records`.
-    *   **Filters**: Date range (From/To), Call Direction (Inbound/Outbound), Agent Name.
-    *   **Columns**: Call ID, Status, Duration, Agent, Service, Recording URL (link to play).
-    *   **UX**: Add a refresh button and sorting capabilities.
-*   **API Integration**:
-    *   Ensure the Smartflo API Key is set in the backend environment variables (`SMARTFLO_API_KEY`).
-    *   Frontend should route requests through the backend proxy (`/api/v1/smartflo/...`) rather than calling Smartflo directly to avoid exposing the key.
+### J. Performance & Caching (New)
+*   **Compression**: Server sends Gzip/Brotli. Ensure your build tool (Next.js/Vite) supports this (usually automatic).
+*   **Conditional Requests (304 Not Modified)**:
+    *   The backend supports `ETag`. 
+    *   **Browser Behavior**: Browsers automatically handle `If-None-Match` and `304` responses. No manual Axios config needed for basic caching.
+    *   **Manual Handling**: If using a custom cache, check `response.status === 304` and use cached data.
+*   **Static Data**:
+    *   Endpoints like `/api/v1/search` and `/api/v1/analytics` are cached server-side (Memory Cache).
+    *   Avoid aggressive polling on these; use SWR/React Query with `staleTime: 60000` (1 min) or `300000` (5 mins).
+
+### K. Search Implementation
+*   **Endpoint**: `GET /api/v1/search?q=query`
+*   **Algorithm**: The backend now uses a **Weighted Fuzzy Search**.
+    *   **Behavior**: Finds Exact matches first, then Prefix matches, then Fuzzy (typo-tolerant) matches (e.g., "admis" finds "Admin").
+*   **UI Suggestion**: Debounce the search input by 300-500ms to avoid flooding the API.
+
 
 
 

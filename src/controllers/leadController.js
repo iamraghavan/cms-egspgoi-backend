@@ -107,14 +107,14 @@ const { getPaginationParams, formatPaginationMeta } = require('../utils/paginati
 // 3. Get Leads
 const getLeads = async (req, res) => {
     try {
-        const { limit, cursor } = getPaginationParams(req.query);
+        const { limit, cursor, startDate, endDate } = getPaginationParams(req.query);
 
         const filter = {};
         if (req.user.role !== 'Super Admin' && req.user.role !== 'Admission Manager') {
             filter.assigned_to = req.user.id;
         }
 
-        const result = await leadService.getLeadsFromDB(filter, limit, cursor);
+        const result = await leadService.getLeadsFromDB(filter, limit, cursor, startDate, endDate);
 
         const meta = formatPaginationMeta(result.cursor, result.count, limit);
         sendSuccess(res, result.items, 'Leads fetched successfully', 200, meta);

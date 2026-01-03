@@ -119,7 +119,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/leads?limit=20&cursor=",
+							"raw": "{{base_url}}/api/v1/leads?limit=20&cursor=&startDate=&endDate=",
 							"host": [
 								"{{base_url}}"
 							],
@@ -137,6 +137,16 @@
 									"key": "cursor",
 									"value": "",
 									"description": "Base64 encoded cursor from previous response meta"
+								},
+								{
+									"key": "startDate",
+									"value": "",
+									"description": "ISO Date (YYYY-MM-DD)"
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"description": "ISO Date (YYYY-MM-DD)"
 								}
 							]
 						}
