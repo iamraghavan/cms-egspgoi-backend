@@ -7,7 +7,6 @@ const assignmentService = require('./assignmentService');
 const leadRepository = require('../repositories/leadRepository');
 const { getUsersDetailsMap } = require('../utils/userHelper'); // Helper
 const { emitToUser, broadcast } = require('./socketService'); // Socket Service
-const { publishEvent } = require('./mqProducer'); // MQ Producer
 
 // Use repository instead of direct DB calls
 const createLeadInDB = async (leadData, isInternal = false, creatorId = null) => {
@@ -74,12 +73,6 @@ const createLeadInDB = async (leadData, isInternal = false, creatorId = null) =>
 
     // Broadcast creation event (e.g. for Admins/Dashboard)
     broadcast('lead_created', { lead: newLead });
-
-    // Publish to Kafka for async automation (Email, SMS hooks)
-    await publishEvent('LEAD_EVENTS', {
-        type: 'LEAD_CREATED',
-        data: newLead
-    });
 
     return { isDuplicate: false, lead: newLead, assignedUser: bestAgent };
 };

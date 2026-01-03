@@ -23,9 +23,6 @@ const server = http.createServer(app);
 // Initialize Socket.io
 initSocket(server);
 
-// Initialize Kafka Consumer (for background tasks)
-require('./src/services/mqConsumer');
-
 const startServer = async () => {
   try {
     // Test DB connection by listing tables
