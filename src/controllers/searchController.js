@@ -4,28 +4,78 @@ const { TABLE_NAME: USERS_TABLE } = require('../models/userModel');
 const { TABLE_NAME: LEADS_TABLE } = require('../models/leadModel');
 const { TABLE_NAME: CAMPAIGNS_TABLE } = require('../models/campaignModel');
 
+/**
+ * Calculate Levenshtein Distance for strings a and b
+ */
+const levenshteinDistance = (a, b) => {
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1, // substitution
+                    Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1) // insertion, deletion
+                );
+            }
+        }
+    }
+    return matrix[b.length][a.length];
+};
+
+/**
+ * Calculate match score
+ * 100 = Exact
+ * 80 = Starts With
+ * 60 = Contains
+ * 40-10 = Fuzzy (based on distance)
+ */
+const getMatchScore = (text, query) => {
+    if (!text) return 0;
+    const t = text.toString().toLowerCase();
+    const q = query.toLowerCase();
+
+    if (t === q) return 100;
+    if (t.startsWith(q)) return 80;
+    if (t.includes(q)) return 60;
+
+    // Fuzzy Check (only if query is reasonable length to avoid noise)
+    if (q.length > 3) {
+        const dist = levenshteinDistance(t, q);
+        // Allow 1 error per 4 chars roughly
+        const maxDist = Math.floor(q.length / 3);
+        if (dist <= maxDist) {
+            return 50 - (dist * 10);
+        }
+    }
+    return 0;
+};
+
 const searchTable = async (TableName, query, fields) => {
     try {
-        // Note: Scan is inefficient for large datasets. 
-        // For production with millions of records, use CloudSearch or ElasticSearch.
-        // For this scale, Scan with filter is acceptable.
-        
-        const lowerQuery = query.toLowerCase();
-        
-        const command = new ScanCommand({
-            TableName,
-        });
-        
+        const command = new ScanCommand({ TableName });
         const result = await docClient.send(command);
         const items = result.Items || [];
-        
-        // In-memory filtering for flexibility with "contains" logic across multiple fields
-        return items.filter(item => {
-            return fields.some(field => {
-                const value = item[field];
-                return value && value.toString().toLowerCase().includes(lowerQuery);
+
+        // Score items
+        const scoredItems = items.map(item => {
+            let bestScore = 0;
+            fields.forEach(field => {
+                const score = getMatchScore(item[field], query);
+                if (score > bestScore) bestScore = score;
             });
-        }).slice(0, 5); // Limit to top 5 results per category
+            return { ...item, _score: bestScore };
+        });
+
+        // Filter and Sort by Score
+        return scoredItems
+            .filter(item => item._score > 0)
+            .sort((a, b) => b._score - a._score)
+            .slice(0, 5); // Top 5
     } catch (error) {
         console.error(`Search error in ${TableName}:`, error);
         return [];

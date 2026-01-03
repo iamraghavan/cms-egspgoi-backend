@@ -16,6 +16,7 @@
     "@aws-sdk/lib-dynamodb": "^3.940.0",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
+    "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -28,6 +29,7 @@
     "libphonenumber-js": "^1.12.31",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
+    "node-cache": "^5.1.2",
     "uuid": "^9.0.1",
     "winston": "^3.18.3",
     "xlsx": "^0.18.5"

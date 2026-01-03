@@ -6,7 +6,7 @@ const { generateLeadRef } = require('../utils/idGenerator');
 const assignmentService = require('./assignmentService');
 
 const { getUsersDetailsMap } = require('../utils/userHelper'); // Helper
-const { emitToUser, broadcast } = require('./socketService'); // Socket Service
+
 
 // Use repository instead of direct DB calls
 const createLeadInDB = async (leadData, isInternal = false, creatorId = null) => {
