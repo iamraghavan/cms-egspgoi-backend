@@ -154,10 +154,15 @@ const addNote = async (req, res) => {
         const { content } = req.body;
         if (!content) return sendError(res, { message: 'Content required' }, 'Add Note', 400);
 
+        const { v4: uuidv4 } = require('uuid'); // Ensure uuid is imported
+
         const newNote = {
+            note_id: uuidv4(),
             content,
             author_id: req.user.id,
             author_name: req.user.name || 'Unknown',
+            author_role: req.user.role || 'User',
+            author_email: req.user.email,
             created_at: getISTTimestamp()
         };
 

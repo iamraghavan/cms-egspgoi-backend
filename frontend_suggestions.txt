@@ -230,3 +230,18 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
 
 
 
+### L. Note Object Structure (Updated)
+*   **Endpoint**: `POST /api/v1/leads/:id/notes`
+*   **Response Payload**:
+    ```json
+    {
+      "note_id": "uuid",
+      "content": "Note text...",
+      "author_id": "user_uuid",
+      "author_name": "John Doe",
+      "author_role": "Admission Manager", // [NEW] Context for UI
+      "author_email": "john@example.com", // [NEW] Contact info
+      "created_at": "04/01/2026 - 09:00:00 am"
+    }
+    ```
+*   **UI Tip**: Display `author_role` next to the name (e.g., "John Doe (Manager)") to give context on who left the note.
