@@ -625,6 +625,41 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Hangup Call",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"call_id\": \"1627373566.350603\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/smartflo/hangup",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"smartflo",
+								"hangup"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		}

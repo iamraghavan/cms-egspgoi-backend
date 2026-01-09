@@ -139,9 +139,9 @@ const initiateCall = async (req, res) => {
         const destinationNumber = getNationalNumber(lead.phone) || lead.phone;
 
         logger.info(`Initiating call for Lead ${id} to ${destinationNumber}`);
-        await clickToCall(agentNumber, destinationNumber, callerId);
+        const response = await clickToCall(agentNumber, destinationNumber, callerId);
 
-        sendSuccess(res, null, 'Call initiated successfully');
+        sendSuccess(res, response, 'Call initiated successfully');
     } catch (error) {
         sendError(res, error, 'Initiate Call');
     }

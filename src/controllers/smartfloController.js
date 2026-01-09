@@ -1,15 +1,65 @@
-const axios = require('axios');
-const { docClient } = require('../config/db');
-const { PutCommand } = require('@aws-sdk/lib-dynamodb');
+const smartfloService = require('../services/smartfloService');
 const { sendSuccess, sendError } = require('../utils/responseUtils');
-
-// Load environment variables
-const SMARTFLO_BASE_URL = process.env.SMARTFLO_BASE_URL || 'https://api-smartflo.tatateleservices.com/v1';
-const SMARTFLO_API_KEY = process.env.SMARTFLO_API_KEY; // Expected to be set in .env
+const logger = require('../utils/logger'); // Assuming logger exists
 
 /**
- * Hangup a call via Smartflo API.
- * Expects JSON body: { call_id: string }
+ * Initiate Click to Call
+ */
+const clickToCall = async (req, res) => {
+  try {
+    const { agent_number, destination_number } = req.body;
+    // Caller ID might be optional or from env
+    const response = await smartfloService.clickToCall(agent_number, destination_number);
+    sendSuccess(res, response, 'Call initiated successfully');
+  } catch (error) {
+    sendError(res, error, 'Click to Call');
+  }
+};
+
+/**
+ * Get Live Calls
+ */
+const getLiveCalls = async (req, res) => {
+  try {
+    const filters = req.query;
+    const response = await smartfloService.getLiveCalls(filters);
+    sendSuccess(res, response, 'Live calls fetched');
+  } catch (error) {
+    sendError(res, error, 'Get Live Calls');
+  }
+};
+
+/**
+ * Get Call Records
+ */
+const getCallRecords = async (req, res) => {
+  try {
+    const params = req.query;
+    const response = await smartfloService.getCallRecords(params);
+    sendSuccess(res, response, 'Call records fetched');
+  } catch (error) {
+    sendError(res, error, 'Get Call Records');
+  }
+};
+
+/**
+ * Call Operations (Monitor, Whisper, Barge, Transfer)
+ */
+const callOperation = async (req, res) => {
+  try {
+    const { type, call_id, agent_id, intercom } = req.body;
+    if (!type || !call_id) {
+      return sendError(res, { message: 'Type and Call ID are required' }, 'Call Operation', 400);
+    }
+    const response = await smartfloService.callOperation(type, call_id, agent_id, intercom);
+    sendSuccess(res, response, 'Call operation executed');
+  } catch (error) {
+    sendError(res, error, 'Call Operation');
+  }
+};
+
+/**
+ * Hangup Call
  */
 const hangupCall = async (req, res) => {
   try {
@@ -17,59 +67,30 @@ const hangupCall = async (req, res) => {
     if (!call_id) {
       return sendError(res, { message: 'call_id is required' }, 'Hangup Call', 400);
     }
-
-    const url = `${SMARTFLO_BASE_URL}/call/hangup`;
-    const response = await axios.post(
-      url,
-      { call_id },
-      {
-        headers: {
-          accept: 'application/json',
-          'content-type': 'application/json',
-          Authorization: `Bearer ${SMARTFLO_API_KEY}`,
-        },
-      }
-    );
-
-    // Store the response in DynamoDB for audit purposes
-    const item = {
-      pk: `SMARTFLO#CALL#${call_id}`,
-      sk: `METADATA#${new Date().toISOString()}`,
-      call_id,
-      response: response.data,
-      created_at: new Date().toISOString(),
-    };
-    await docClient.send(new PutCommand({ TableName: process.env.DYNAMODB_TABLE, Item: item }));
-
-    sendSuccess(res, response.data, 'Call hung up successfully');
+    const response = await smartfloService.hangupCall(call_id);
+    sendSuccess(res, response, 'Call hung up successfully');
   } catch (error) {
-    const errMsg = error.response ? error.response.data : error.message;
-    sendError(res, errMsg, 'Hangup Call');
+    sendError(res, error, 'Hangup Call');
   }
 };
 
 /**
- * Retrieve call detail records from Smartflo.
- * Accepts query parameters matching Smartflo API.
+ * Get Smartflo Users
  */
-const getCallRecords = async (req, res) => {
+const getSmartfloUsers = async (req, res) => {
   try {
-    const query = req.query; // forward all query params
-    const url = `${SMARTFLO_BASE_URL}/call/records`;
-    const response = await axios.get(url, {
-      headers: {
-        accept: 'application/json',
-        Authorization: `Bearer ${SMARTFLO_API_KEY}`,
-      },
-      params: query,
-    });
-
-    // Optionally store the fetched records (batch) – here we just return them
-    sendSuccess(res, response.data, 'Call records fetched');
+    const response = await smartfloService.getUsers();
+    sendSuccess(res, response, 'Smartflo users fetched');
   } catch (error) {
-    const errMsg = error.response ? error.response.data : error.message;
-    sendError(res, errMsg, 'Get Call Records');
+    sendError(res, error, 'Get Smartflo Users');
   }
 };
 
-module.exports = { hangupCall, getCallRecords };
+module.exports = {
+  clickToCall,
+  getLiveCalls,
+  getCallRecords,
+  callOperation,
+  hangupCall,
+  getSmartfloUsers
+};

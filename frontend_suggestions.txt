@@ -117,10 +117,11 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
 *   **Permissions**: `Finance` (Payments), `Marketing Manager` (Ad Spends).
 
 ### F. Telephony / Smartflo (`/telephony`)
-*   **Live Monitor (Manager Only)**:
+*   **Live Monitor & Controls**:
     *   List of active calls.
     *   **Actions**: Listen (Monitor), Whisper (Coach), Barge (Join), Hangup.
-    *   **API**: GET `/api/v1/smartflo/live-calls`, POST `/api/v1/smartflo/call-operation`.
+    *   **API**: GET `/api/v1/smartflo/live-calls`, POST `/api/v1/smartflo/call-operation`, POST `/api/v1/smartflo/hangup`.
+    *   **Access**: Admin, Admission Manager, Admission Executive.
 *   **Call History**:
     *   Table of past calls with Recording playback.
     *   **API**: GET `/api/v1/smartflo/call-records`.
@@ -151,9 +152,10 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
 | **Smartflo** | Click-to-Call | `POST` | `/api/v1/leads/:id/call` | Admin/Manager/Exec |
 | | | | | *Note: `agent_number` is optional if set in User Profile.* |
 | | Webhook | `POST` | `/api/v1/smartflo/webhook` | External (Public) |
-| | Live Calls | `GET` | `/api/v1/smartflo/live-calls` | Admission Manager |
+| | Live Calls | `GET` | `/api/v1/smartflo/live-calls` | Admin/Manager/Exec |
 | | Call Records | `GET` | `/api/v1/smartflo/call-records` | Auth User (Scoped) |
-| | Monitor/Barge | `POST` | `/api/v1/smartflo/call-operation` | Admission Manager |
+| | Monitor/Barge | `POST` | `/api/v1/smartflo/call-operation` | Admin/Manager/Exec |
+| | Hangup Call | `POST` | `/api/v1/smartflo/hangup` | Admin/Manager/Exec |
 | **Admin Controls** | Update User | `PUT` | `/api/v1/users/:id` | Super Admin |
 | | Delete User | `DELETE` | `/api/v1/users/:id` | Super Admin | *Query `?type=hard` for permanent delete* |
 | | Delete Campaign | `DELETE` | `/api/v1/campaigns/:id` | Super Admin | *Query `?type=hard` for permanent delete* |
