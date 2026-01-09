@@ -17,7 +17,7 @@ let tokenExpiry = null;
  * Handles all interactions with Tata Smartflo API
  */
 const smartfloService = {
-  
+
   /**
    * Login to Smartflo to get Access Token
    */
@@ -66,7 +66,7 @@ const smartfloService = {
   getToken: async () => {
     // 1. Prefer API Key if available
     if (process.env.SMARTFLO_API_KEY) {
-        return process.env.SMARTFLO_API_KEY;
+      return process.env.SMARTFLO_API_KEY;
     }
 
     // 2. Fallback to Email/Password Login (Legacy)
@@ -81,7 +81,7 @@ const smartfloService = {
    */
   getHeaders: async () => {
     const token = await smartfloService.getToken();
-    
+
     // If using API Key (which is a JWT), it often needs 'Bearer ' prefix too, 
     // or sometimes just the key depending on provider. 
     // The user's example showed 'Bearer <API_KEY_JWT>'.
@@ -98,7 +98,7 @@ const smartfloService = {
    * @param {string} destinationNumber - Customer Number
    * @param {string} callerId - Caller ID (DID)
    */
-  clickToCall: async (agentNumber, destinationNumber, callerId = null) => {
+  clickToCall: async (agentNumber, destinationNumber, callerId = null, refId = null) => {
     try {
       const headers = await smartfloService.getHeaders();
       const payload = {
@@ -110,6 +110,15 @@ const smartfloService = {
 
       if (callerId) {
         payload.caller_id = callerId;
+      }
+
+      // Pass the Lead ID (or any arbitrary reference) to link webhooks later
+      // The user docs show '$ref_id' in webhook variables.
+      // We pass it as 'custom_field' or 'ref_id' depending on API spec.
+      // Based on docs, it's likely 'ref_id' or 'custom_data'. 
+      // Assumption: 'ref_id' is the parameter name given the response variable matches it.
+      if (arguments[3]) { // check if refId was passed (we need to update signature too)
+        payload.ref_id = arguments[3];
       }
 
       const response = await axios.post(`${SMARTFLO_BASE_URL}/click_to_call`, payload, { headers });
@@ -127,7 +136,7 @@ const smartfloService = {
   getLiveCalls: async (filters = {}) => {
     try {
       const headers = await smartfloService.getHeaders();
-      const response = await axios.get(`${SMARTFLO_BASE_URL}/live_calls`, { 
+      const response = await axios.get(`${SMARTFLO_BASE_URL}/live_calls`, {
         headers,
         params: filters
       });
@@ -145,7 +154,7 @@ const smartfloService = {
   getCallRecords: async (params = {}) => {
     try {
       const headers = await smartfloService.getHeaders();
-      const response = await axios.get(`${SMARTFLO_BASE_URL}/call/records`, { 
+      const response = await axios.get(`${SMARTFLO_BASE_URL}/call/records`, {
         headers,
         params
       });

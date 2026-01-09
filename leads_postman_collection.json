@@ -604,7 +604,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"customer_number\": \"9876543210\",\n    \"agent_number\": \"12345\",\n    \"call_status\": \"answered\",\n    \"duration\": 120\n}",
+							"raw": "{\n    \"uuid\": \"test-uuid-123\",\n    \"call_to_number\": \"9876543210\",\n    \"caller_id_number\": \"08012345678\",\n    \"start_stamp\": \"2025-01-09 10:00:00\",\n    \"call_id\": \"call_id_123\",\n    \"billing_circle\": \"KA\",\n    \"customer_no_with_prefix\": \"919876543210\",\n    \"call_status\": \"answered\",\n    \"direction\": \"outbound\",\n    \"duration\": \"120\",\n    \"recording_url\": \"http://example.com/rec.mp3\",\n    \"agent_number\": \"1001\",\n    \"ref_id\": \"{{lead_id}}\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"

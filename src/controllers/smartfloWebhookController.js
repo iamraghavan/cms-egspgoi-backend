@@ -9,35 +9,70 @@ const { getISTTimestamp } = require('../utils/timeUtils');
 const handleWebhook = async (req, res) => {
     try {
         const eventData = req.body;
-        logger.info('Smartflo Webhook Received:', JSON.stringify(eventData, null, 2));
+        // logger.info('Smartflo Webhook Received:', JSON.stringify(eventData, null, 2));
 
-        // Basic event processing
-        // We are primarily interested in matching calls to Leads.
-        // Smartflo webhooks usually send `$call_to_number` or `$customer_number`
-        // Note: The params sent by Smartflo might be in the body directly.
-
-        // Extract key info based on common patterns in docs
-        const customerNumber = eventData.customer_number || eventData.call_to_number || eventData.destination_number;
-        const agentNumber = eventData.agent_number || eventData.answered_agent_number;
+        // 1. Extract Key Data
+        // Smartflo sends slightly different keys based on trigger, but ref_id is consistent if we sent it.
+        const refId = eventData.ref_id || eventData.custom_field;
+        const callId = eventData.call_id || eventData.uuid;
         const status = eventData.call_status || 'unknown';
-        const direction = eventData.direction; // 'inbound' or 'outbound' or 'click_to_call'
-        const duration = eventData.duration || eventData.billsec;
+        const direction = eventData.direction; // 'inbound', 'outbound', 'click_to_call'
+        const duration = parseInt(eventData.duration || eventData.billsec || '0', 10);
+        const recordingUrl = eventData.recording_url;
+        const agentNumber = eventData.agent_number || eventData.answered_agent_number;
+        const customerNumber = eventData.customer_number || eventData.call_to_number;
 
-        if (!customerNumber) {
-            logger.warn('Webhook received without customer number');
-            return res.status(200).send('OK'); // Ack to prevent retries
+        // 2. Dynamic Relationship: If we have a Ref ID (Lead ID), update the Lead
+        if (refId) {
+            // Check if it's a UUID (Lead ID)
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(refId);
+
+            if (isUuid) {
+                // Fetch current lead to append call log
+                const lead = await leadService.getLeadById(refId);
+                if (lead) {
+                    const newCallLog = {
+                        call_id: callId,
+                        type: direction,
+                        status: status,
+                        duration: duration,
+                        agent_number: agentNumber,
+                        recording_url: recordingUrl,
+                        timestamp: getISTTimestamp(),
+                        raw_data: eventData // Optional: store full data for debug
+                    };
+
+                    // Append to call_history array (assuming schema supports it, if not we add note)
+                    // If schema doesn't have call_history, we can add a Note or just update last_contacted
+                    let updates = {};
+
+                    // Add Note automatically if call connected > 30s
+                    if (status.toLowerCase().includes('answered') && duration > 0) {
+                        const noteContent = `Auto-Log: Call ${direction} connected for ${duration}s. Status: ${status}.`;
+                        const newNote = {
+                            note_id: require('uuid').v4(),
+                            content: noteContent,
+                            author_id: 'system',
+                            author_name: 'Smartflo System',
+                            author_role: 'System',
+                            created_at: getISTTimestamp()
+                        };
+                        updates.notes = [...(lead.notes || []), newNote];
+                    }
+
+                    // Update last contacted
+                    updates.last_contacted_at = getISTTimestamp();
+
+                    await leadService.updateLeadInDB(refId, updates);
+                    logger.info(`Updated Lead ${refId} from Webhook. Status: ${status}`);
+                }
+            }
         }
 
-        // Normalize customer number for lookup (e.g. remove +91 prefix matching)
-        // This is tricky because lead phone is E.164. 
-        // We'll search using a precise match if possible, or Scan.
+        // 3. (Optional) Log to a separate 'CallLogs' table if needed for analytics.
+        // For now, updating Lead is sufficient for the user's request.
 
-        // TODO: Implement logic to update Lead "Last Call Status" or add a "Call Log" note.
-        // For now, we just acknowledge receipt as this is a new feature.
-
-        // Real-time call status broadcast removed.
-
-        res.status(200).send('Webhook Received');
+        res.status(200).send('OK');
     } catch (error) {
         logger.error('Webhook Error:', error);
         res.status(500).send('Error');

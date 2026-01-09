@@ -136,10 +136,13 @@ const initiateCall = async (req, res) => {
 
         if (!lead) return sendError(res, { message: 'Lead not found' }, 'Initiate Call', 404);
 
-        const destinationNumber = getNationalNumber(lead.phone) || lead.phone;
-
-        logger.info(`Initiating call for Lead ${id} to ${destinationNumber}`);
-        const response = await clickToCall(agentNumber, destinationNumber, callerId);
+        // Pass user's agent number, destination, callerId (optional), and Lead ID (as ref_id)
+        const response = await clickToCall(
+            agentNumber,
+            lead.phone,
+            callerId,
+            id // ref_id (using lead ID)
+        );
 
         sendSuccess(res, response, 'Call initiated successfully');
     } catch (error) {
