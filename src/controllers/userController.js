@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const { v4: uuidv4 } = require('uuid');
 const { getISTTimestamp } = require('../utils/timeUtils');
 const { docClient } = require('../config/db');
 const { PutCommand, QueryCommand, ScanCommand, GetCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
