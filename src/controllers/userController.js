@@ -120,8 +120,8 @@ const login = async (req, res) => {
         name: user.name,
         email: user.email,
         role: roleName,
-        agent_number: user.agent_number,
-        caller_id: user.caller_id
+        agent_number: user.agent_number || null,
+        caller_id: user.caller_id || null
       }
     });
   } catch (error) {
@@ -143,6 +143,10 @@ const getProfile = async (req, res) => {
     }
 
     const user = result.Item;
+    // Ensure Smartflo fields are present even if not in DB
+    user.agent_number = user.agent_number || null;
+    user.caller_id = user.caller_id || null;
+
     delete user.password_hash;
     res.json(user);
   } catch (error) {
