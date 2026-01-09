@@ -10,7 +10,8 @@ router.post('/login', login);
 router.post('/refresh', refreshToken);
 
 // Protected routes
-router.get('/auth/profile', authenticate, getProfile);
+router.get('/auth/profile', authenticate, getProfile); // Get Own Profile
+router.patch('/auth/profile', authenticate, require('../controllers/userController').updateProfile); // Update Own Profile
 router.post('/auth/refresh', refreshToken);
 router.patch('/auth/availability', authenticate, toggleAvailability);
 router.put('/auth/settings', authenticate, require('../controllers/userSettingsController').updateSettings);

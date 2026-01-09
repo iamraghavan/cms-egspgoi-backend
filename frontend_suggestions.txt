@@ -179,7 +179,13 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
 
 ### H. User Localization & Settings
 *   **Profile Settings Page**:
-    *   **Preferences Form**: Dropdowns for:
+    *   **Edit Profile Form**:
+        *   Fields: Name, Phone, Designation.
+        *   **Smartflo Config** (Important for Agents):
+            *   **Agent Number**: Input field (e.g., 1001).
+            *   **Caller ID**: Input field (e.g., 044...).
+        *   **Action**: `PATCH /api/v1/users/auth/profile`
+    *   **Preferences Form** (Separate or same page):
         *   **Currency**: `INR`, `USD`, `EUR` (Default `INR`)
         *   **Language**: `en`, `es`, `fr` (Default `en`)
         *   **Timezone**: `Asia/Kolkata` (Default), Auto-detect from browser.

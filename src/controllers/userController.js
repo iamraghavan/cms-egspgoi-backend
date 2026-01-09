@@ -479,4 +479,62 @@ const deleteUser = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile, getUsers, createUser, refreshToken, toggleAvailability, updateUser, deleteUser };
+// Update Own Profile
+const updateProfile = async (req, res) => {
+  try {
+    const { id } = req.user; // From auth middleware
+    const { name, phone, agent_number, caller_id, designation } = req.body;
+
+    // Only allow updating specific fields
+    const updates = {};
+    if (name) updates.name = name;
+    if (phone) updates.phone = phone;
+    if (designation) updates.designation = designation;
+    if (agent_number !== undefined) updates.agent_number = agent_number;
+    if (caller_id !== undefined) updates.caller_id = caller_id;
+
+    updates.updated_at = getISTTimestamp();
+
+    if (Object.keys(updates).length === 1) { // Only updated_at
+      return res.status(400).json({ message: 'No valid fields to update' });
+    }
+
+    // Construct UpdateExpression
+    let updateExp = "set";
+    const expNames = {};
+    const expValues = {};
+
+    let i = 0;
+    for (const [key, value] of Object.entries(updates)) {
+      const attrName = `#attr${i}`;
+      const attrVal = `:val${i}`;
+      updateExp += ` ${attrName} = ${attrVal},`;
+      expNames[attrName] = key;
+      expValues[attrVal] = value;
+      i++;
+    }
+
+    // Remove trailing comma
+    updateExp = updateExp.slice(0, -1);
+
+    const command = new UpdateCommand({
+      TableName: USERS_TABLE,
+      Key: { id },
+      UpdateExpression: updateExp,
+      ExpressionAttributeNames: expNames,
+      ExpressionAttributeValues: expValues,
+      ReturnValues: "ALL_NEW"
+    });
+
+    const result = await docClient.send(command);
+    const updatedUser = result.Attributes;
+    delete updatedUser.password_hash;
+
+    res.json({ message: 'Profile updated successfully', user: updatedUser });
+  } catch (error) {
+    console.error('Update Profile Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { register, login, getProfile, getUsers, createUser, refreshToken, toggleAvailability, updateUser, deleteUser, updateProfile };

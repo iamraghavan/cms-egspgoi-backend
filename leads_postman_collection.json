@@ -595,6 +595,42 @@
 			]
 		},
 		{
+			"name": "Update Own Profile",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"My New Name\",\n    \"phone\": \"9876543210\",\n    \"agent_number\": \"1001\",\n    \"caller_id\": \"04412345678\",\n    \"designation\": \"Senior Executive\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/users/auth/profile",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"users",
+						"auth",
+						"profile"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Smartflo",
 			"item": [
 				{
