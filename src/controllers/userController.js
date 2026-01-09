@@ -358,7 +358,7 @@ const toggleAvailability = async (req, res, next) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, role, phone, designation, status, is_available, weightage, active_leads_count } = req.body;
+    const { name, email, role, phone, designation, status, is_available, weightage, active_leads_count, agent_number, caller_id } = req.body;
 
     const getCommand = new GetCommand({
       TableName: USERS_TABLE,
@@ -378,6 +378,8 @@ const updateUser = async (req, res) => {
     if (is_available !== undefined) updates.is_available = is_available;
     if (weightage) updates.weightage = weightage;
     if (active_leads_count !== undefined) updates.active_leads_count = active_leads_count;
+    if (agent_number !== undefined) updates.agent_number = agent_number;
+    if (caller_id !== undefined) updates.caller_id = caller_id;
 
     // Role update logic
     if (role) {

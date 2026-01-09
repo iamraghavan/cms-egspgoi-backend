@@ -247,19 +247,22 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
     }
     ```
 *   **UI Tip**: Display `author_role` next to the name (e.g., "John Doe (Manager)") to give context on who left the note.
-### M. Smartflo Integration Details (New)
-*   **Initiating a Call (Flow)**:
-    1.  Frontend calls `POST /api/v1/leads/:id/call`.
-    2.  Backend returns response containing `data.call_id` (or similar ID from Smartflo).
-    3.  **CRITICAL**: Frontend MUST store this `call_id` in component state (e.g., `currentCallId`).
-*   **Hanging Up**:
-    1.  User clicks "Hangup".
-    2.  Frontend calls `POST /api/v1/smartflo/hangup` with payload `{ "call_id": currentCallId }`.
-    3.  If `call_id` is missing, the API will fail.
-*   **Webhooks & Auto-Updates**:
-    *   The backend now listens for Smartflo Webhooks.
-    *   When a call ends, the backend automatically logs the call details (duration, status, recording) to the Lead's notes/history.
-    *   **Frontend Action**: Refetch Lead data (`useQuery` invalidation) 5-10 seconds after a call ends to show the new log.
+### M. Smartflo Integration Details (Critical Update)
+*   **The "Call ID" Challenge**:
+    *   The `initiateCall` (Click-to-Call) API starts the process but often DOES NOT return the final `call_id` required for hanging up.
+    *   **Solution**: You must **Poll** the Live Calls API to find the active call.
+
+*   **Step-by-Step Implementation Flow**:
+    1.  **Initiate**: Frontend calls `POST /api/v1/leads/:id/call`.
+    2.  **Poll**: Immediately start polling `GET /api/v1/smartflo/live-calls?agent_number=YOUR_AGENT_NUMBER` every 2 seconds.
+    3.  **Find**: In the response array, look for a call where `customer_number` matches the lead's phone.
+    4.  **Store**: Once found, save the `call_id` from that object into your state (e.g., `activeCallId`).
+    5.  **Stop Polling**: Stop the interval once `activeCallId` is found.
+    6.  **Hangup**: When user clicks Hangup, use `POST /api/v1/smartflo/hangup` with `{ "call_id": activeCallId }`.
+
+*   **Webhooks (Auto-Logging)**:
+    *   Separate from the live control, the backend listens for webhooks to log the *history* (duration, recording) automatically.
+    *   Refetch the Lead 5-10s after the call ends to see these logs in the UI.
 
 ### N. Postman Payload References (Development & Testing)
 For testing via Postman (or Curl), use these JSON payloads.

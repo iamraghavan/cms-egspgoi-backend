@@ -12,7 +12,8 @@ const userSchema = Joi.object({
   phone: Joi.string().allow(null, ''),
   designation: Joi.string().allow(null, ''),
   status: Joi.string().valid('active', 'inactive', 'suspended').default('active'),
-  smartflo_agent_id: Joi.string().allow(null, ''), // ID of the agent in Smartflo system
+  agent_number: Joi.string().allow(null, ''), // Smartflo Agent Number (e.g. 1001)
+  caller_id: Joi.string().allow(null, ''),    // Smartflo Caller ID (DID)
   is_available: Joi.boolean().default(true), // For auto-assignment
   weightage: Joi.number().integer().min(1).default(1), // Weighted distribution
   active_leads_count: Joi.number().integer().min(0).default(0), // Load balancing
