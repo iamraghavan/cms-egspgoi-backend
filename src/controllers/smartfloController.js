@@ -141,6 +141,8 @@ const getActiveCall = async (req, res) => {
         const rawCallCustomer = call.customer_number || call.destination_number || call.destination;
         const callCustomer = getLast10(rawCallCustomer);
 
+        console.log(`[ActiveCall] Comparing Trigger: matched(${callCustomer === targetPhone}) | Lead(${targetPhone}) vs Call(${callCustomer}) | Raw(${rawCallCustomer})`);
+
         if (callCustomer === targetPhone) {
           console.log(`[ActiveCall] Query Match! Call ID: ${call.call_id}`);
           return true;

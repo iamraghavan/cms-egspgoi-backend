@@ -136,10 +136,18 @@ const smartfloService = {
   getLiveCalls: async (filters = {}) => {
     try {
       const headers = await smartfloService.getHeaders();
-      const response = await axios.get(`${SMARTFLO_BASE_URL}/live_calls`, {
+      const url = `${SMARTFLO_BASE_URL}/live_calls`;
+
+      console.log(`[SmartfloService] Fetching Live Calls. URL: ${url}`);
+      console.log(`[SmartfloService] Headers:`, JSON.stringify({ ...headers, Authorization: '***' }));
+      console.log(`[SmartfloService] Filters:`, filters);
+
+      const response = await axios.get(url, {
         headers,
         params: filters
       });
+
+      console.log(`[SmartfloService] Live Calls Found: ${Array.isArray(response.data) ? response.data.length : 'Not Array'}`);
       return response.data;
     } catch (error) {
       console.error('Get Live Calls Error:', error.response?.data || error.message);
