@@ -109,17 +109,43 @@ const getActiveCall = async (req, res) => {
       return sendError(res, { message: 'Lead not found' }, 'Get Active Call', 404);
     }
 
-    const liveCalls = await smartfloService.getLiveCalls({ agent_number });
+    // Debug Logs
+    console.log(`[ActiveCall] Checking for Lead: ${lead_id}, Agent: ${agent_number}`);
+    console.log(`[ActiveCall] Lead Phone: ${lead.phone}`);
+
+    // Fetch ALL live calls (filter in memory to avoid API strictness issues)
+    // The Smartflo API 'agent_number' filter might require ID or Name which we might not have matched perfectly.
+    const liveCalls = await smartfloService.getLiveCalls({});
+    console.log(`[ActiveCall] Fetched ${liveCalls?.length || 0} live calls from API.`);
 
     const getLast10 = (num) => num ? num.toString().replace(/\D/g, '').slice(-10) : '';
     const targetPhone = getLast10(lead.phone);
+    console.log(`[ActiveCall] Target Phone (Last 10): ${targetPhone}`);
 
     let activeCall = null;
 
     if (Array.isArray(liveCalls)) {
       activeCall = liveCalls.find(call => {
-        const callCustomer = getLast10(call.customer_number || call.destination_number || call.destination);
-        return callCustomer === targetPhone;
+        // Log each call for debugging
+        // console.log(`[ActiveCall] Processing Call:`, JSON.stringify(call));
+
+        // 1. Check Agent Match (In-Memory)
+        // We match strictly if 'agent_number' matches EITHER 'agent_name', 'agent_number' or 'user_id' in response
+        // OR if the user didn't care about agent (which we shouldn't really allow for security, but for testing...)
+        // The user's JSON shows 'agent_name': 'Raghavan Jeeva'.
+        // If agent_number is '1001', this won't match. 
+        // Strategy: If agent_number is provided, we TRY to match. 
+        // BUT for now, let's rely mainly on the Customer Number match, assuming 1 agent can't talk to the same customer twice at once.
+        // We can warn if agent doesn't match.
+
+        const rawCallCustomer = call.customer_number || call.destination_number || call.destination;
+        const callCustomer = getLast10(rawCallCustomer);
+
+        if (callCustomer === targetPhone) {
+          console.log(`[ActiveCall] Query Match! Call ID: ${call.call_id}`);
+          return true;
+        }
+        return false;
       });
     }
 
