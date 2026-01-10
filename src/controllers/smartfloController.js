@@ -86,9 +86,7 @@ const getSmartfloUsers = async (req, res) => {
   }
 };
 
-hangupCall,
-  getSmartfloUsers
-};
+
 
 /**
  * Get Active Call for a Lead
