@@ -1,13 +1,9 @@
 # Smartflo Frontend Integration Guide
 
-This guide details exactly how to implement the Call features in the frontend.
+This guide details exactly how to implement the Smartflo integration.
 
-## 1. Prerequisites
-*   The User must be logged in.
-*   The User must have `agent_number` in their profile (update via Profile Settings).
-
-## 2. Feature: Click-to-Call & Hangup
-This is a 3-step process.
+## 1. Feature: Click-to-Call & Hangup (Agent Dashboard)
+This is for individual Agents to call Leads.
 
 ### Step A: Initiate Call
 **Endpoint**: `POST /api/v1/leads/{id}/call`
@@ -24,14 +20,30 @@ This is a 3-step process.
     }
     ```
 
-### Step B: Polling (The "Connecting" State)
+### Step B: Polling (Active Call Status)
 **Endpoint**: `GET /api/v1/smartflo/active-call/{id}`
-*   **Action**: Start calling this API every **2 seconds** immediately after Step A.
+*   **Action**: Poll every **2 seconds** after Step A.
 *   **Condition**:
     *   If `data.active === false`: Continue polling.
     *   If `data.active === true`: **STOP Polling**.
 *   **Store**: Save the `data.call_id` in your component state (e.g., `currentCallId`).
-*   **UI**: Change the "Call Icon" to a red "Hangup Icon".
+*   **UI**: Change the "Call Icon" to a red "Hangup Icon". display Duration and Status.
+*   **Response**:
+    ```json
+    {
+      "success": true,
+      "data": {
+        "active": true,
+        "call_id": "1768024046.927391",
+        "status": "Answered",
+        "duration": "00:00:33",
+        "direction": 2,
+        "agent_name": "Raghavan Jeeva",
+        "customer_number": "06382087377",
+        "created_at": "2026-01-10 16:47:26"
+      }
+    }
+    ```
 
 ### Step C: Hangup
 **Endpoint**: `POST /api/v1/smartflo/call/hangup`
@@ -46,8 +58,51 @@ This is a 3-step process.
 
 ---
 
+## 2. Feature: Super Admin Call Monitoring (Dashboard)
+This is for the Super Admin to view all ongoing calls and history.
+
+### A. Live Call Monitoring
+**Endpoint**: `GET /api/v1/smartflo/live-calls`
+*   **Description**: Returns a list of ALL currently active calls.
+*   **Response**: Array of smartflo call objects (same as raw Smartflo response).
+*   **UI Suggestion**: Create a "Live Calls" widget or table.
+    *   Columns: Agent, Customer, Status (Ringing/Answered), Duration.
+    *   Action: Allow Admin to "Listen" (if separate API implemented) or see details.
+
+### B. Call Reports (History)
+**Endpoint**: `GET /api/v1/smartflo/call/records`
+*   **Description**: Fetches historical Call Detail Records (CDRs).
+*   **Filters (QueryParams)**:
+    *   `from_date`: Start (YYYY-MM-DD HH:MM:SS) - *Required by Smartflo*
+    *   `to_date`: End (YYYY-MM-DD HH:MM:SS) - *Required by Smartflo*
+    *   `destination`: **Customer Number** (for Outbound Calls)
+    *   `callerid`: **Customer Number** (for Inbound Calls)
+    *   `direction`: `inbound` / `outbound`
+    *   `agent_number`: Smartflo Agent ID
+    *   `limit`: 20
+    *   `page`: 1
+*   **Response**:
+    ```json
+    {
+      "count": 406,
+      "limit": 20,
+      "results": [
+        {
+          "call_id": "...",
+          "direction": "inbound",
+          "status": "answered",
+          "recording_url": "https://...",
+          "call_duration": 48,
+          "agent_name": "Parag Yadav",
+          "customer_number": "..."
+        }
+      ]
+    }
+    ```
+
+---
+
 ## 3. Webhook (Auto-Logging)
 **No Frontend Action Required.**
-*   The backend automatically listens for call events from Smartflo.
-*   When a call ends, the backend updates the Lead's "Last Contacted" date and adds a Note with the duration.
-*   **Testing**: Use the "Webhook Simulation" request in Postman to verify this updates the UI (after a refresh).
+*   Backend listens for Smartflo events.
+*   The system automatically logs calls to the Lead's timeline.

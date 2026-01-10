@@ -31,6 +31,13 @@ const getLiveCalls = async (req, res) => {
 
 /**
  * Get Call Records
+ * @desc Proxies request to Smartflo. Supports all Smartflo filters.
+ * @param {string} req.query.from_date - Start Date (YYYY-MM-DD HH:mm:ss)
+ * @param {string} req.query.to_date - End Date
+ * @param {string} req.query.destination - Customer Number (for Outbound)
+ * @param {string} req.query.callerid - Customer Number (for Inbound)
+ * @param {string} req.query.agent_number - Agent ID
+ * @param {string} req.query.direction - 'inbound' or 'outbound'
  */
 const getCallRecords = async (req, res) => {
   try {
