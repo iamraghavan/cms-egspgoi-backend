@@ -144,7 +144,12 @@ const initiateCall = async (req, res) => {
             id // ref_id (using lead ID)
         );
 
-        sendSuccess(res, response, 'Call initiated successfully');
+        // Send success with instruction to poll
+        sendSuccess(res, {
+            ...response,
+            action: 'poll_active_call',
+            poll_url: `/api/v1/smartflo/active-call/${id}`
+        }, 'Call initiated. Please poll for active call status.');
     } catch (error) {
         sendError(res, error, 'Initiate Call');
     }

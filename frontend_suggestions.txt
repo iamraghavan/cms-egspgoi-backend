@@ -258,13 +258,16 @@ To build a robust, scalable, and "vibe coding" friendly frontend that matches yo
     *   The `initiateCall` (Click-to-Call) API starts the process but often DOES NOT return the final `call_id` required for hanging up.
     *   **Solution**: You must **Poll** the Live Calls API to find the active call.
 
-*   **Step-by-Step Implementation Flow**:
+*   **Step-by-Step Implementation Flow (Backend Polling Strategy)**:
     1.  **Initiate**: Frontend calls `POST /api/v1/leads/:id/call`.
-    2.  **Poll**: Immediately start polling `GET /api/v1/smartflo/live-calls?agent_number=YOUR_AGENT_NUMBER` every 2 seconds.
-    3.  **Find**: In the response array, look for a call where `customer_number` matches the lead's phone.
-    4.  **Store**: Once found, save the `call_id` from that object into your state (e.g., `activeCallId`).
-    5.  **Stop Polling**: Stop the interval once `activeCallId` is found.
-    6.  **Hangup**: When user clicks Hangup, use `POST /api/v1/smartflo/hangup` with `{ "call_id": activeCallId }`.
+    2.  **Wait**: The response contains `poll_url` (e.g., `/api/v1/smartflo/active-call/:id`).
+    3.  **Poll**: Start polling this `poll_url` every 2 seconds.
+    4.  **Backend Logic**: The backend automatically finds the LIVE call by matching Agent & Customer numbers.
+    5.  **Status**: The API returns `{ active: true, call_id: "...", status: "answered" }`.
+    6.  **Store**: Save the `call_id` from this response.
+    7.  **Hangup**: When user clicks Hangup, call `POST /api/v1/smartflo/hangup` with `{ "call_id": "..." }`.
+
+*   **Benefit**: You don't need to filter list arrays on the frontend. The backend gives you the exact status.
 
 *   **Webhooks (Auto-Logging)**:
     *   Separate from the live control, the backend listens for webhooks to log the *history* (duration, recording) automatically.
