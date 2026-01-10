@@ -1,0 +1,161 @@
+{
+    "info": {
+        "_postman_id": "smartflo-integration-collection",
+        "name": "Smartflo Integration API",
+        "description": "Dedicated collection for Smartflo Call features.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "1. Initiate Call",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"agent_number\": \"OPTIONAL\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/v1/leads/{{lead_id}}/call",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "v1",
+                        "leads",
+                        "{{lead_id}}",
+                        "call"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "2. Get Active Call (Polling)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/v1/smartflo/active-call/{{lead_id}}",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "v1",
+                        "smartflo",
+                        "active-call",
+                        "{{lead_id}}"
+                    ]
+                },
+                "description": "Poll this every 2 seconds after initiating a call to get the 'call_id'."
+            },
+            "response": []
+        },
+        {
+            "name": "3. Hangup Call",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"call_id\": \"{{active_call_id}}\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/v1/smartflo/call/hangup",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "v1",
+                        "smartflo",
+                        "call",
+                        "hangup"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "4. Webhook Simulation",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"uuid\": \"test-uuid-123\",\n    \"call_to_number\": \"9876543210\",\n    \"call_status\": \"answered\",\n    \"direction\": \"outbound\",\n    \"duration\": \"60\",\n    \"recording_url\": \"http://example.com/rec.mp3\",\n    \"ref_id\": \"{{lead_id}}\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/v1/smartflo/webhook",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "v1",
+                        "smartflo",
+                        "webhook"
+                    ]
+                }
+            },
+            "response": []
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000",
+            "type": "string"
+        },
+        {
+            "key": "token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "lead_id",
+            "value": "YOUR_LEAD_ID_HERE",
+            "type": "string"
+        },
+        {
+            "key": "active_call_id",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}

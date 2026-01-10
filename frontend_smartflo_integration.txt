@@ -1,0 +1,53 @@
+# Smartflo Frontend Integration Guide
+
+This guide details exactly how to implement the Call features in the frontend.
+
+## 1. Prerequisites
+*   The User must be logged in.
+*   The User must have `agent_number` in their profile (update via Profile Settings).
+
+## 2. Feature: Click-to-Call & Hangup
+This is a 3-step process.
+
+### Step A: Initiate Call
+**Endpoint**: `POST /api/v1/leads/{id}/call`
+*   **Action**: User clicks the "Call Icon" on a lead.
+*   **Response**:
+    ```json
+    {
+      "success": true,
+      "message": "Call initiated...",
+      "data": {
+        "action": "poll_active_call",
+        "poll_url": "/api/v1/smartflo/active-call/{id}"
+      }
+    }
+    ```
+
+### Step B: Polling (The "Connecting" State)
+**Endpoint**: `GET /api/v1/smartflo/active-call/{id}`
+*   **Action**: Start calling this API every **2 seconds** immediately after Step A.
+*   **Condition**:
+    *   If `data.active === false`: Continue polling.
+    *   If `data.active === true`: **STOP Polling**.
+*   **Store**: Save the `data.call_id` in your component state (e.g., `currentCallId`).
+*   **UI**: Change the "Call Icon" to a red "Hangup Icon".
+
+### Step C: Hangup
+**Endpoint**: `POST /api/v1/smartflo/call/hangup`
+*   **Action**: User clicks "Hangup".
+*   **Payload**:
+    ```json
+    {
+      "call_id": "YOUR_STORED_CALL_ID"
+    }
+    ```
+*   **Result**: Call ends.
+
+---
+
+## 3. Webhook (Auto-Logging)
+**No Frontend Action Required.**
+*   The backend automatically listens for call events from Smartflo.
+*   When a call ends, the backend updates the Lead's "Last Contacted" date and adds a Note with the duration.
+*   **Testing**: Use the "Webhook Simulation" request in Postman to verify this updates the UI (after a refresh).

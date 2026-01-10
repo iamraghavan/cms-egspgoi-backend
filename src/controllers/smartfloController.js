@@ -95,10 +95,11 @@ const getSmartfloUsers = async (req, res) => {
 const getActiveCall = async (req, res) => {
   try {
     const { lead_id } = req.params;
-    const { agent_number } = req.user; // Ensure your auth middleware populates this
+    // Allow fallback: If not in Token (req.user), check Query Params (for testing/admins)
+    const agent_number = req.user.agent_number || req.query.agent_number;
 
     if (!agent_number) {
-      return sendError(res, { message: 'Agent number not found in profile.' }, 'Get Active Call', 400);
+      return sendError(res, { message: 'Agent number not found in profile or query params.' }, 'Get Active Call', 400);
     }
 
     const leadService = require('../services/leadService');
