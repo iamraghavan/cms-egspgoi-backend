@@ -154,9 +154,16 @@ const getActiveCall = async (req, res) => {
     if (activeCall) {
       return sendSuccess(res, {
         active: true,
+        // Detailed Call Info
         call_id: activeCall.call_id,
         status: activeCall.call_status || activeCall.state,
-        duration: activeCall.duration || activeCall.call_time
+        duration: activeCall.duration || activeCall.call_time,
+        direction: activeCall.direction,
+        agent_name: activeCall.agent_name,
+        customer_number: activeCall.customer_number || activeCall.destination,
+        created_at: activeCall.created_at,
+        // Include full raw object for any other fields
+        raw: activeCall
       }, 'Active call found');
     } else {
       return sendSuccess(res, { active: false }, 'No active call found');
