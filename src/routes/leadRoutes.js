@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createLead, getLeads, initiateCall, submitLead, addNote, getLeadNotes, transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead, bulkTransferLeads, getLead } = require('../controllers/leadController');
+const { createLead, getLeads, initiateCall, submitLead, addNote, getLeadNotes, transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead, bulkTransferLeads, getLead, exportLeads } = require('../controllers/leadController');
 const { authenticate } = require('../middleware/authMiddleware');
 const { checkPermission } = require('../middleware/rbacMiddleware');
 
@@ -40,6 +40,9 @@ router.post('/leads/bulk-transfer', authenticate, (req, res, next) => {
         res.status(403).json({ message: 'Access denied: Only Admins/Managers can bulk transfer' });
     }
 }, bulkTransferLeads);
+
+// Export Leads (Before /leads/:id to avoid conflict)
+router.get('/leads/export', authenticate, exportLeads);
 
 router.patch('/leads/:id/status', authenticate, updateLeadStatus);
 

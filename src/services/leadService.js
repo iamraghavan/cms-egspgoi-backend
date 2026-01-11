@@ -194,11 +194,61 @@ const bulkAssignLeads = async (leadIds, newAgentId) => {
     return { successCount, total: leadIds.length };
 };
 
+// Fetch ALL leads for Export (Iterate over all pages)
+const getAllLeadsFromDB = async (filter = {}, startDate = null, endDate = null) => {
+    let allItems = [];
+    let exclusiveStartKey = null;
+
+    do {
+        // limit=100 per internal fetch for better throughput
+        const result = await leadRepository.findAll(filter, 100, exclusiveStartKey);
+
+        let items = result.items || [];
+
+        // Date Filter (In-Memory, if repo doesn't handle range)
+        if (startDate || endDate) {
+            const start = startDate ? new Date(startDate).getTime() : 0;
+            const end = endDate ? new Date(endDate).getTime() : Date.now();
+            items = items.filter(item => {
+                const itemDate = new Date(item.created_at).getTime();
+                return itemDate >= start && itemDate <= end;
+            });
+        }
+
+        allItems = allItems.concat(items);
+        exclusiveStartKey = result.cursor;
+
+    } while (exclusiveStartKey); // Continue until no cursor
+
+    // Sort by created_at desc (default)
+    allItems.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // Enrich
+    const userIds = [...new Set(allItems.map(t => t.assigned_to).concat(allItems.map(t => t.created_by)).filter(Boolean))];
+    const userMap = await getUsersDetailsMap(userIds);
+
+    const enrichedItems = allItems.map(item => {
+        const assignedUser = userMap[item.assigned_to];
+        const createdByUser = userMap[item.created_by];
+
+        return {
+            ...item,
+            assigned_to_name: assignedUser ? assignedUser.name : 'Unassigned',
+            created_by_name: createdByUser ? createdByUser.name : 'System',
+            assigned_user: assignedUser || null,
+            created_by_user: createdByUser || null
+        };
+    });
+
+    return enrichedItems;
+};
+
 module.exports = {
     createLeadInDB,
     getLeadsFromDB,
     getLeadById,
     updateLeadInDB,
     deleteLead,
-    bulkAssignLeads
+    bulkAssignLeads,
+    getAllLeadsFromDB
 };

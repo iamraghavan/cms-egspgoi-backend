@@ -74,6 +74,44 @@
 					]
 				},
 				{
+					"name": "Export Leads",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/leads/export?format=excel",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"leads",
+								"export"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "excel",
+									"description": "excel, pdf, csv"
+								},
+								{
+									"key": "columns",
+									"value": "name,phone,status,assigned_to_name,created_at",
+									"description": "Optional: custom columns"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Create Lead (Internal)",
 					"request": {
 						"method": "POST",

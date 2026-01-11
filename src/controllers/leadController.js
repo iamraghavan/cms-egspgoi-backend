@@ -388,10 +388,59 @@ const getLead = async (req, res) => {
     } catch (error) {
         sendError(res, error, 'Get Lead');
     }
-};
+    // 15. Export Leads
+    const exportLeads = async (req, res) => {
+        try {
+            const { format = 'excel', columns, startDate, endDate } = req.query;
+            let selectedColumns = columns ? columns.split(',') : ['name', 'phone', 'email', 'status', 'assigned_to_name', 'created_at', 'source_website'];
 
-module.exports = {
-    createLead, getLeads, initiateCall, submitLead, addNote, getLeadNotes,
-    transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead,
-    bulkTransferLeads, getLead
-};
+            // Filter Setup (Reuse Logic from getLeads)
+            const filter = {};
+            if (req.user.role !== 'Super Admin' && req.user.role !== 'Admission Manager') {
+                filter.assigned_to = req.user.id;
+            }
+
+            // Apply other filters (assigned_to, role, status, etc.)
+            if (req.query.assigned_to) {
+                if (filter.assigned_to && filter.assigned_to !== req.query.assigned_to) return res.status(200).send(''); // Conflict
+                filter.assigned_to = req.query.assigned_to;
+            }
+            if (req.query.status) filter.status = req.query.status;
+            if (req.query.pipeline_id) filter.pipeline_id = req.query.pipeline_id;
+
+            // Similar Name/Role logic if needed (Assuming standard filters for now)
+            // ... (can refactor filter building logic to utility if reused often)
+
+            const leads = await leadService.getAllLeadsFromDB(filter, startDate, endDate);
+
+            const { generateExcel, generateCSV, generatePDF } = require('../utils/exportHelper');
+
+            if (format === 'excel') {
+                const buffer = generateExcel(leads, selectedColumns);
+                res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                res.setHeader('Content-Disposition', `attachment; filename=leads_export_${Date.now()}.xlsx`);
+                return res.send(buffer);
+            } else if (format === 'csv') {
+                const buffer = generateCSV(leads, selectedColumns);
+                res.setHeader('Content-Type', 'text/csv');
+                res.setHeader('Content-Disposition', `attachment; filename=leads_export_${Date.now()}.csv`);
+                return res.send(buffer);
+            } else if (format === 'pdf') {
+                const buffer = await generatePDF(leads, selectedColumns);
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', `attachment; filename=leads_export_${Date.now()}.pdf`);
+                return res.send(buffer);
+            } else {
+                return sendError(res, { message: 'Invalid format. Use excel, csv, or pdf' }, 'Export Leads', 400);
+            }
+
+        } catch (error) {
+            sendError(res, error, 'Export Leads');
+        }
+    };
+
+    module.exports = {
+        createLead, getLeads, initiateCall, submitLead, addNote, getLeadNotes,
+        transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead,
+        bulkTransferLeads, getLead, exportLeads
+    };
