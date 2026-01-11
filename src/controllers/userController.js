@@ -217,6 +217,31 @@ const getUsers = async (req, res) => {
   }
 };
 
+const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const command = new GetCommand({
+      TableName: USERS_TABLE,
+      Key: { id }
+    });
+
+    const result = await docClient.send(command);
+    if (!result.Item) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = result.Item;
+    user.agent_number = user.agent_number || null;
+    user.caller_id = user.caller_id || null;
+    delete user.password_hash;
+
+    res.json(user);
+  } catch (error) {
+    console.error('Get User By ID Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 const createUser = async (req, res) => {
   const { name, email, password, role, team_id, phone, designation, agent_number, caller_id, status, metadata } = req.body;
 
@@ -537,4 +562,4 @@ const updateProfile = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile, getUsers, createUser, refreshToken, toggleAvailability, updateUser, deleteUser, updateProfile };
+module.exports = { register, login, getProfile, getUsers, getUserById, createUser, refreshToken, toggleAvailability, updateUser, deleteUser, updateProfile };

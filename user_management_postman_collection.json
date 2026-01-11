@@ -2,10 +2,61 @@
     "info": {
         "_postman_id": "user-management-collection",
         "name": "User Management API",
-        "description": "Dedicated collection for User Management (Super Admin).",
+        "description": "Dedicated collection for User Management (Super Admin). Now with Full CRUD.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "item": [
+        {
+            "name": "Admin: Get All Users",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/v1/users",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "v1",
+                        "users"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Admin: Get User Details",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/v1/users/{{user_id}}",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "v1",
+                        "users",
+                        "{{user_id}}"
+                    ]
+                }
+            },
+            "response": []
+        },
         {
             "name": "Admin: Create User",
             "request": {

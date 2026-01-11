@@ -17,6 +17,7 @@ router.patch('/auth/availability', authenticate, toggleAvailability);
 router.put('/auth/settings', authenticate, require('../controllers/userSettingsController').updateSettings);
 router.get('/', authenticate, getUsers); // Authenticated users can get list
 router.post('/', authenticate, checkPermission('all'), createUser); // Only Super Admin
+router.get('/:id', authenticate, require('../controllers/userController').getUserById); // Get User Details
 router.put('/:id', authenticate, checkPermission('all'), updateUser); // Only Super Admin
 router.delete('/:id', authenticate, checkPermission('all'), deleteUser); // Only Super Admin
 
