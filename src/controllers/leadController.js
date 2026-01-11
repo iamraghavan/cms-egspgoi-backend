@@ -114,6 +114,49 @@ const getLeads = async (req, res) => {
             filter.assigned_to = req.user.id;
         }
 
+        // Assigned To Name Filter
+        if (req.query.assigned_to_name) {
+            const { findUserByName } = require('../utils/userHelper');
+            const targetUser = await findUserByName(req.query.assigned_to_name);
+
+            if (!targetUser) {
+                // User not found, so no leads can match
+                return sendSuccess(res, [], 'Leads fetched successfully', 200, formatPaginationMeta(null, 0, limit));
+            }
+
+            // Conflict Check: If role already restricted access to User A, and they ask for User B
+            if (filter.assigned_to && filter.assigned_to !== targetUser.id) {
+                return sendSuccess(res, [], 'Leads fetched successfully', 200, formatPaginationMeta(null, 0, limit));
+            }
+
+            filter.assigned_to = targetUser.id;
+        }
+
+        // Assigned To Role Filter (New)
+        if (req.query.assigned_to_role_id) {
+            const { findUsersByRole } = require('../utils/userHelper');
+            const targetUsers = await findUsersByRole(req.query.assigned_to_role_id);
+
+            if (targetUsers.length === 0) {
+                return sendSuccess(res, [], 'Leads fetched successfully', 200, formatPaginationMeta(null, 0, limit));
+            }
+
+            const targetUserIds = targetUsers.map(u => u.id);
+
+            // Conflict Check: If query also had specific user filter, intersect or fail?
+            // If assigned_to (ID) is present, check if it is IN the role list.
+            if (filter.assigned_to) {
+                if (!targetUserIds.includes(filter.assigned_to)) {
+                    // The specific user requested doesn't have the requested role
+                    return sendSuccess(res, [], 'Leads fetched successfully', 200, formatPaginationMeta(null, 0, limit));
+                }
+                // If match, keeping filter.assigned_to as single ID is fine (more specific than role list)
+            } else {
+                // Apply IN filter
+                filter.assigned_to = targetUserIds;
+            }
+        }
+
         const result = await leadService.getLeadsFromDB(filter, limit, cursor, startDate, endDate);
 
         const meta = formatPaginationMeta(result.cursor, result.count, limit);

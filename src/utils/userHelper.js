@@ -84,4 +84,67 @@ const getUsersDetailsMap = async (userIds) => {
     }
 };
 
-module.exports = { getUserNamesMap, getUsersDetailsMap };
+/**
+ * Finds a user by name (Case Insensitive Partial Match).
+ * Using Scan as Users table is small.
+ * @param {string} name 
+ * @returns {object|null} User object or null
+ */
+const findUserByName = async (name) => {
+    if (!name) return null;
+
+    try {
+        const { ScanCommand } = require("@aws-sdk/lib-dynamodb");
+        const lowerName = name.toLowerCase();
+
+        // Scan all users (Efficient enough for < 1000 users)
+        const command = new ScanCommand({
+            TableName: USERS_TABLE,
+            ProjectionExpression: 'id, #name',
+            ExpressionAttributeNames: { '#name': 'name' }
+        });
+
+        const result = await docClient.send(command);
+        const users = result.Items || [];
+
+        // Find match in memory
+        const match = users.find(u => u.name && u.name.toLowerCase() === lowerName);
+
+        // If no exact match, try includes? User requested "assigned_to_name", usually implies selection from dropdown.
+        // Let's stick to strict-ish equality (case-insensitive) to avoid ambiguity.
+        return match || null;
+    } catch (error) {
+        console.error("Error finding user by name:", error);
+        return null;
+    }
+};
+
+/**
+ * Finds all users with a specific Role ID.
+ * @param {string} roleId 
+ * @returns {Array<object>} List of users
+ */
+const findUsersByRole = async (roleId) => {
+    if (!roleId) return [];
+
+    try {
+        const { ScanCommand } = require("@aws-sdk/lib-dynamodb");
+
+        // Scan all users (Efficient enough for < 1000 users) -> Ideally GSI on role_id
+        const command = new ScanCommand({
+            TableName: USERS_TABLE,
+            FilterExpression: 'role_id = :roleId',
+            ExpressionAttributeValues: { ':roleId': roleId },
+            ProjectionExpression: 'id, #name, role_id',
+            ExpressionAttributeNames: { '#name': 'name' }
+        });
+
+        const result = await docClient.send(command);
+        return result.Items || [];
+    } catch (error) {
+        console.error("Error finding users by role:", error);
+        return [];
+    }
+};
+
+module.exports = { getUserNamesMap, getUsersDetailsMap, findUserByName, findUsersByRole };

@@ -191,6 +191,78 @@
 					]
 				},
 				{
+					"name": "List Leads (Filtered by Assignee)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/leads?limit=20&assigned_to_name=Admission Manager",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"leads"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "assigned_to_name",
+									"value": "Admission Manager",
+									"description": "Filter by Assigned User Name"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Leads (Filtered by Role)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/leads?limit=20&assigned_to_role_id=ROLE_UUID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"leads"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "assigned_to_role_id",
+									"value": "ROLE_UUID",
+									"description": "Filter by Role ID"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get Lead Details",
 					"request": {
 						"method": "GET",

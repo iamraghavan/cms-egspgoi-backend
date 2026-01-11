@@ -109,7 +109,17 @@ class LeadRepository {
 
         if (Object.keys(filter).length > 0) {
             params.FilterExpression = Object.keys(filter)
-                .map((key, index) => `#field${index} = :value${index}`)
+                .map((key, index) => {
+                    if (Array.isArray(filter[key])) {
+                        // Handle IN clause for Arrays
+                        // key IN (:val0, :val1, ...)
+                        const valueKeys = filter[key].map((_, vIndex) => `:value${index}_${vIndex}`).join(', ');
+                        return `#field${index} IN (${valueKeys})`;
+                    } else {
+                        // Handle Standard Equality
+                        return `#field${index} = :value${index}`;
+                    }
+                })
                 .join(' AND ');
 
             params.ExpressionAttributeNames = {};
@@ -117,7 +127,15 @@ class LeadRepository {
 
             Object.keys(filter).forEach((key, index) => {
                 params.ExpressionAttributeNames[`#field${index}`] = key;
-                params.ExpressionAttributeValues[`:value${index}`] = filter[key];
+
+                if (Array.isArray(filter[key])) {
+                    // Map individual items in array to unique value keys
+                    filter[key].forEach((val, vIndex) => {
+                        params.ExpressionAttributeValues[`:value${index}_${vIndex}`] = val;
+                    });
+                } else {
+                    params.ExpressionAttributeValues[`:value${index}`] = filter[key];
+                }
             });
         }
 
