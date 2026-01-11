@@ -1,0 +1,66 @@
+Frontend Implementation Suggestions for User Management
+=====================================================
+
+1. Users List Page (/admin/users)
+---------------------------------
+*   **Layout**: Data Table with pagination and filters.
+*   **Columns**:
+    *   **Name**: Display Name + Designation (subtext).
+    *   **Role**: Badge (e.g., 'Admission Manager' in Blue, 'Executive' in Green).
+    *   **Smartflo**: Agent Number / Caller ID (if available).
+    *   **Distribution**:
+        *   Availability: Toggle Switch (Directly calls `PATCH /api/v1/users/auth/availability` or `PUT /api/v1/users/:id`).
+        *   Weightage: Badge (e.g., "1x", "2x").
+        *   Active Leads: Count (useful for load balancing).
+    *   **Status**: Active (Green Dot) / Inactive (Grey Dot).
+    *   **Actions**: Edit Button (Pencil), Delete Button (Trash).
+
+*   **Filters**:
+    *   Role Filter (Dropdown).
+    *   Status Filter (Active/Inactive).
+    *   Search Bar (Name/Email).
+
+2. Create User Modal (POST /api/v1/users)
+-----------------------------------------
+*   **Basic Details**:
+    *   Name (Text)
+    *   Email (Email)
+    *   Password (Password - generate strong default or let admin set)
+    *   Phone (Text)
+    *   Designation (Text)
+*   **Role & Permissions**:
+    *   Role (Dropdown: Fetch from /api/v1/roles ideally, or hardcode map).
+    *   Team (Dropdown: Optional).
+*   **Smartflo Configuration (Only if Role = Agent/Manager)**:
+    *   Agent Number (Text: e.g. "1001").
+    *   Caller ID (Text: DID Number).
+*   **Distribution Settings**:
+    *   Status (Active/Inactive).
+    *   Metadata (JSON Editor or Key-Value pairs if needed).
+
+3. Update User Modal (PUT /api/v1/users/:id)
+--------------------------------------------
+*   **Pre-fill**: Load existing data.
+*   **Read-Only**: Email (usually restricted, but API allows update).
+*   **Password**: Do NOT show. Have a separate "Reset Password" action if needed (not in this API spec yet).
+*   **Auto-Assignment Config**:
+    *   **Is Available**: Toggle.
+    *   **Weightage**: Number Input (Min 1).
+    *   **Active Leads Count**: Number Input (Be careful allowing manual edit, usually system managed).
+
+4. Delete User (DELETE /api/v1/users/:id)
+-----------------------------------------
+*   **Soft Delete (Default)**:
+    *   Icon: Trash Can.
+    *   Prompt: "Are you sure you want to delete this user? They can be restored later."
+    *   Call: `DELETE /api/v1/users/:id?type=soft`
+*   **Hard Delete (Super Admin Only)**:
+    *   Icon: Red Trash Can / "Permanent Delete" in context menu.
+    *   Prompt: "WARNING: This action cannot be undone. All data will be lost."
+    *   Call: `DELETE /api/v1/users/:id?type=hard`
+
+5. Integration Tips
+-------------------
+*   **Validation**: Ensure 'Agent Number' is unique if entered (handle API 400 errors).
+*   **Feedback**: Show toast notifications on Success/Error.
+*   **Role Awareness**: If the logged-in user is NOT Super Admin, hide the "Hard Delete" option and ensure they can't assign strict roles (if logic exists).
