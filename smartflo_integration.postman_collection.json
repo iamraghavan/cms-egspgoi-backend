@@ -7,7 +7,7 @@
     },
     "item": [
         {
-            "name": "1. Initiate Call",
+            "name": "User: 1. Initiate Call",
             "request": {
                 "method": "POST",
                 "header": [
@@ -43,7 +43,7 @@
             "response": []
         },
         {
-            "name": "2. Get Active Call (Polling)",
+            "name": "User: 2. Get Active Call (Polling)",
             "request": {
                 "method": "GET",
                 "header": [
@@ -54,7 +54,7 @@
                     }
                 ],
                 "url": {
-                    "raw": "{{base_url}}/api/v1/smartflo/active-call/{{lead_id}}",
+                    "raw": "{{base_url}}/api/v1/smartflo/active-call/{{lead_id}}?agent_number={{agent_number}}",
                     "host": [
                         "{{base_url}}"
                     ],
@@ -64,6 +64,13 @@
                         "smartflo",
                         "active-call",
                         "{{lead_id}}"
+                    ],
+                    "query": [
+                        {
+                            "key": "agent_number",
+                            "value": "{{agent_number}}",
+                            "description": "Optional fallback for testing"
+                        }
                     ]
                 },
                 "description": "Poll this every 2 seconds after initiating a call to get the 'call_id'."
@@ -71,7 +78,7 @@
             "response": []
         },
         {
-            "name": "3. Hangup Call",
+            "name": "User: 3. Hangup Call",
             "request": {
                 "method": "POST",
                 "header": [
@@ -107,7 +114,95 @@
             "response": []
         },
         {
-            "name": "4. Webhook Simulation",
+            "name": "Admin: 1. Live Calls",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/v1/smartflo/live-calls",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "v1",
+                        "smartflo",
+                        "live-calls"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Admin: 2. Call Records (Filtered)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/v1/smartflo/call/records?from_date=2024-05-01 00:00:00&to_date=2024-05-30 23:59:59&limit=20&page=1&destination=&callerid=&direction=",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "v1",
+                        "smartflo",
+                        "call",
+                        "records"
+                    ],
+                    "query": [
+                        {
+                            "key": "from_date",
+                            "value": "2024-05-01 00:00:00",
+                            "description": "YYYY-MM-DD HH:MM:SS"
+                        },
+                        {
+                            "key": "to_date",
+                            "value": "2024-05-30 23:59:59",
+                            "description": "YYYY-MM-DD HH:MM:SS"
+                        },
+                        {
+                            "key": "limit",
+                            "value": "20"
+                        },
+                        {
+                            "key": "page",
+                            "value": "1"
+                        },
+                        {
+                            "key": "destination",
+                            "value": "",
+                            "description": "Customer Number (for Outbound)"
+                        },
+                        {
+                            "key": "callerid",
+                            "value": "",
+                            "description": "Customer Number (for Inbound)"
+                        },
+                        {
+                            "key": "direction",
+                            "value": "",
+                            "description": "inbound or outbound"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "System: Webhook Simulation",
             "request": {
                 "method": "POST",
                 "header": [],
@@ -155,6 +250,11 @@
         {
             "key": "active_call_id",
             "value": "",
+            "type": "string"
+        },
+        {
+            "key": "agent_number",
+            "value": "1001",
             "type": "string"
         }
     ]

@@ -14,7 +14,7 @@ const globalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 10, // Limit each IP to 10 login attempts per 5 minutes
+  max: 20, // Limit each IP to 20 login attempts per 5 minutes
   message: {
     message: 'Too many login attempts from this IP, please try again after 5 minutes'
   },
