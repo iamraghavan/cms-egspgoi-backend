@@ -263,6 +263,42 @@
 					"response": []
 				},
 				{
+					"name": "List Leads (Filtered by User ID)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/leads?limit=20&assigned_to=USER_UUID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"leads"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "assigned_to",
+									"value": "USER_UUID",
+									"description": "Filter by Assigned User ID"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get Lead Details",
 					"request": {
 						"method": "GET",

@@ -114,6 +114,16 @@ const getLeads = async (req, res) => {
             filter.assigned_to = req.user.id;
         }
 
+        // Direct Assigned To ID Filter
+        if (req.query.assigned_to) {
+            // Security: If filter.assigned_to is already set (by restriction logic above), ensure they match.
+            // If they don't match, it means a restricted user is trying to see someone else's leads -> Return empty.
+            if (filter.assigned_to && filter.assigned_to !== req.query.assigned_to) {
+                return sendSuccess(res, [], 'Leads fetched successfully', 200, formatPaginationMeta(null, 0, limit));
+            }
+            filter.assigned_to = req.query.assigned_to;
+        }
+
         // Assigned To Name Filter
         if (req.query.assigned_to_name) {
             const { findUserByName } = require('../utils/userHelper');
