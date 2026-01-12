@@ -9,13 +9,15 @@ router.post('/register', register); // In a real app, registration might be rest
 router.post('/login', login);
 router.post('/refresh', refreshToken);
 
+const { cacheMiddleware } = require('../middleware/cacheMiddleware');
+
 // Protected routes
 router.get('/auth/profile', authenticate, getProfile); // Get Own Profile
 router.patch('/auth/profile', authenticate, require('../controllers/userController').updateProfile); // Update Own Profile
 router.post('/auth/refresh', refreshToken);
 router.patch('/auth/availability', authenticate, toggleAvailability);
 router.put('/auth/settings', authenticate, require('../controllers/userSettingsController').updateSettings);
-router.get('/', authenticate, getUsers); // Authenticated users can get list
+router.get('/', authenticate, cacheMiddleware(300), getUsers); // Authenticated users can get list (Cached 5 mins)
 router.post('/', authenticate, checkPermission('all'), createUser); // Only Super Admin
 router.get('/:id', authenticate, require('../controllers/userController').getUserById); // Get User Details
 router.put('/:id', authenticate, checkPermission('all'), updateUser); // Only Super Admin

@@ -1,0 +1,169 @@
+{
+    "info": {
+        "_postman_id": "leads-export-collection",
+        "name": "Leads Export API",
+        "description": "Dedicated collection for Exporting Leads in various formats (Excel, PDF, CSV).",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Export Leads (Excel - Default)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/v1/leads/export?format=excel",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "v1",
+                        "leads",
+                        "export"
+                    ],
+                    "query": [
+                        {
+                            "key": "format",
+                            "value": "excel",
+                            "description": "Default format"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Export Leads (PDF)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/v1/leads/export?format=pdf",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "v1",
+                        "leads",
+                        "export"
+                    ],
+                    "query": [
+                        {
+                            "key": "format",
+                            "value": "pdf",
+                            "description": "PDF Format"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Export Leads (CSV)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/v1/leads/export?format=csv",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "v1",
+                        "leads",
+                        "export"
+                    ],
+                    "query": [
+                        {
+                            "key": "format",
+                            "value": "csv",
+                            "description": "CSV Format"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Export Leads (Filtered & Customized)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/v1/leads/export?format=excel&status=new&startDate=2024-01-01&columns=name,phone,status,assigned_to_name",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "v1",
+                        "leads",
+                        "export"
+                    ],
+                    "query": [
+                        {
+                            "key": "format",
+                            "value": "excel",
+                            "description": "Format"
+                        },
+                        {
+                            "key": "status",
+                            "value": "new",
+                            "description": "Filter by status"
+                        },
+                        {
+                            "key": "startDate",
+                            "value": "2024-01-01",
+                            "description": "Filter by Date Range"
+                        },
+                        {
+                            "key": "columns",
+                            "value": "name,phone,status,assigned_to_name",
+                            "description": "Custom Columns"
+                        }
+                    ]
+                }
+            },
+            "response": []
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000",
+            "type": "string"
+        },
+        {
+            "key": "token",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}

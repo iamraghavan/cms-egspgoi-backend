@@ -5,16 +5,16 @@ const logger = winston.createLogger({
   format: winston.format.combine(
     winston.format.timestamp({
       format: () => {
-          return new Date().toLocaleString('en-IN', {
-            timeZone: 'Asia/Kolkata',
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true
-          }).replace(',', ' -');
+        return new Date().toLocaleString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true
+        }).replace(',', ' -');
       }
     }),
     winston.format.errors({ stack: true }),
@@ -26,9 +26,22 @@ const logger = winston.createLogger({
     //
     // - Write all logs with importance level of `error` or less to `error.log`
     // - Write all logs with importance level of `info` or less to `combined.log`
+    // - Optimization: tailable: true for better rotation handling (basic), maxFiles/maxsize can be added.
+    // - Using 'file' transport is inherently async in winston (streams).
     //
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' }),
+    new winston.transports.File({
+      filename: 'error.log',
+      level: 'error',
+      maxsize: 5242880, // 5MB
+      maxFiles: 5,
+      tailable: true
+    }),
+    new winston.transports.File({
+      filename: 'combined.log',
+      maxsize: 5242880, // 5MB
+      maxFiles: 5,
+      tailable: true
+    }),
   ],
 });
 

@@ -1,0 +1,130 @@
+# Frontend Implementation Guide: Leads Export Feature
+
+## 1. UI/UX Suggestions
+
+### A. The Trigger
+- **Location**: Top of the Leads List / Data Table.
+- **Label**: "Export" or "Download Report".
+- **Icon**: Download icon (e.g., FaDownload).
+- **Behavior**: Clicking opens an "Export Options" Modal.
+
+### B. The Export Modal
+- **Title**: "Export Leads"
+- **Format Selection**:
+  - [RadioButton] Excel (.xlsx) (Default)
+  - [RadioButton] CSV (.csv)
+  - [RadioButton] PDF (.pdf)
+  
+- **Data Filtering (Optional)**:
+  - "Apply Current Filters?": [Checkbox] (Checked by default).
+  - If unchecked, allow selecting Date Range manually.
+
+- **Column Customization (Advanced)**:
+  - "Select Columns": [Multi-Select Dropdown] or [Checkbox List].
+  - Defaults: Name, Phone, Email, Status, Assigned To, Created At.
+  - Options: Source, Campaign (UTM), Note Count, etc.
+
+- **Footer**:
+  - [Cancel Button]
+  - [Download Button] (Primary Action, shows spinner while downloading).
+
+---
+
+## 2. JavaScript Logic (Axios + Blob)
+
+The valid response from the backend is a **Binary Stream** (Blob). You cannot just read `response.data` as JSON. You must treat it as a blob and trigger a browser download.
+
+### Example Function (React/Generic JS)
+
+```javascript
+import axios from 'axios';
+
+const downloadLeadsReport = async (filters, format = 'excel', selectedColumns = []) => {
+  try {
+    // 1. Construct Query Params
+    const params = new URLSearchParams();
+    params.append('format', format);
+    
+    // Add current active filters (status, date, user, etc.)
+    if (filters.startDate) params.append('startDate', filters.startDate);
+    if (filters.endDate) params.append('endDate', filters.endDate);
+    if (filters.status) params.append('status', filters.status);
+    if (filters.assigned_to) params.append('assigned_to', filters.assigned_to);
+    
+    // Custom Columns
+    if (selectedColumns.length > 0) {
+      params.append('columns', selectedColumns.join(','));
+    }
+
+    // 2. Make API Call with responseType: 'blob'
+    const response = await axios.get(`${API_BASE_URL}/api/v1/leads/export`, {
+      params: params,
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      responseType: 'blob' // CRITICAL: This tells Axios to handle binary data
+    });
+
+    // 3. Trigger Download
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Set Filename
+    const extension = format === 'excel' ? 'xlsx' : format; // excel -> xlsx, pdf -> pdf, csv -> csv
+    link.setAttribute('download', `leads_export_${new Date().toISOString().slice(0,10)}.${extension}`);
+    
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+  } catch (error) {
+    console.error("Export Failed", error);
+    alert("Failed to download report. Please try again.");
+  }
+};
+```
+
+---
+
+## 3. Integration Tips
+
+- **Loading State**: The export might take a few seconds if there are thousands of leads. Show a loading spinner on the button: `isExporting ? <Spinner /> : "Download"`.
+- **Permissions**: Ensure the user has permission to view the leads they are exporting. The backend handles this, but you might want to hide the button for roles with strict `no-view` permissions (unlikely for agents, but good practice).
+- **Date Handling**: Sends dates in `YYYY-MM-DD` format to match backend expectations.
+
+## 4. Example Modal Component (Conceptual React)
+
+```jsx
+const ExportModal = ({ isOpen, onClose, currentFilters }) => {
+  const [format, setFormat] = useState('excel');
+  const [columns, setColumns] = useState([]); // Empty = Default
+
+  const handleDownload = async () => {
+    setIsLoading(true);
+    await downloadLeadsReport(currentFilters, format, columns);
+    setIsLoading(false);
+    onClose();
+  };
+
+  return (
+    <Modal isOpen={isOpen}>
+      <h2>Export Leads</h2>
+      
+      <label>Format:</label>
+      <select value={format} onChange={(e) => setFormat(e.target.value)}>
+        <option value="excel">Excel (.xlsx)</option>
+        <option value="pdf">PDF (.pdf)</option>
+        <option value="csv">CSV (.csv)</option>
+      </select>
+      
+      <button onClick={handleDownload} disabled={isLoading}>
+        {isLoading ? 'Exporting...' : 'Download File'}
+      </button>
+    </Modal>
+  );
+};
+```
