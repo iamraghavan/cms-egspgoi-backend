@@ -410,9 +410,6 @@ const exportLeads = async (req, res) => {
         if (req.query.status) filter.status = req.query.status;
         if (req.query.pipeline_id) filter.pipeline_id = req.query.pipeline_id;
 
-        // Similar Name/Role logic if needed (Assuming standard filters for now)
-        // ... (can refactor filter building logic to utility if reused often)
-
         const leads = await leadService.getAllLeadsFromDB(filter, startDate, endDate);
 
         const { generateExcel, generateCSV, generatePDF } = require('../utils/exportHelper');
@@ -446,3 +443,4 @@ module.exports = {
     transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead,
     bulkTransferLeads, getLead, exportLeads
 };
+
