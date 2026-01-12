@@ -1,0 +1,157 @@
+# Flutter Mobile App Development Suggestions (Comprehensive)
+This guide details how to utilize *every* backend endpoint in your mobile application for a complete feature set.
+
+## 1. Architecture Overview
+-   **Framework**: Flutter (Dart)
+-   **State Management**: **Riverpod** (Recommended) or Bloc.
+-   **Networking**: **Dio** with Interceptors (for Token Refresh & Logging).
+-   **Storage**: **Hive** (Offline Data) + **FlutterSecureStorage** (Tokens).
+-   **Navigation**: **GoRouter**.
+
+---
+
+## 2. Authentication & User Profile Module
+**Goal**: Secure login, signup, session management, and profile settings.
+
+### Recommended State Management Pattern (Critical)
+*Prevent common "User not logged in" errors by using a central provider.*
+1.  **`auth_provider.dart`**: Create a `StateNotifierProvider` (Riverpod) that holds the `User?` object or `AuthStatus` enum.
+2.  **`router.dart` (GoRouter)**:
+    -   Use `refreshListenable: ref.watch(authProvider)`.
+    -   **Redirect Logic**:
+        ```dart
+        redirect: (context, state) {
+          final isLoggedIn = ref.read(authProvider).isLoggedIn;
+          if (!isLoggedIn && state.subloc != '/login' && state.subloc != '/signup') return '/login';
+          if (isLoggedIn && (state.subloc == '/login' || state.subloc == '/signup')) return '/home';
+          return null;
+        }
+        ```
+3.  **Login/Signup Screens**: On success, call `ref.read(authProvider.notifier).setUser(user)`.
+
+| Endpoint | Method | Mobile Use Case |
+| :--- | :--- | :--- |
+| `/api/v1/users/login` | POST | **Login Screen**: Authenticate user, update `authProvider`. |
+| `/api/v1/users/register` | POST | **Signup Screen**: Public registration for new agents/students. |
+| `/api/v1/users/refresh` | POST | **Background**: Dio Interceptor calls this on 401 error. |
+| `/api/v1/users/auth/profile` | GET | **Home Init**: Fetch user details to populate `authProvider` on app launch. |
+| `/api/v1/users/auth/profile` | PATCH | **Profile Screen**: Update name, phone, or bio. |
+| `/api/v1/users/auth/availability` | PATCH | **Home Toggle**: "Online/Offline" availability switch. |
+| `/api/v1/users/auth/settings` | PUT | **Settings**: Update preferences. |
+
+
+---
+
+## 3. Dashboard & Analytics Module
+**Goal**: Role-based insights on the Home Screen.
+
+| Endpoint | Method | Mobile Use Case |
+| :--- | :--- | :--- |
+| `/api/v1/analytics/executive` | GET | **Agent Home**: Show "My Daily Calls", "My Conversions", "Pending Follow-ups". |
+| `/api/v1/analytics/admission` | GET | **Manager Home**: Show Team Performance, Lead Pipeline Status. |
+| `/api/v1/analytics/marketing` | GET | **Marketer Home**: Campaign ROI, Lead Sources, Ad Spends vs Budget. |
+| `/api/v1/analytics/finance` | GET | **Finance Home**: Pending Payments, Approved Budgets. |
+| `/api/v1/analytics/admin` | GET | **Super Admin Home**: High-level system health and global stats. |
+
+---
+
+## 4. Lead Management Module (Core)
+**Goal**: Full CRM capabilities on the go.
+
+| Endpoint | Method | Mobile Use Case |
+| :--- | :--- | :--- |
+| `/api/v1/leads` | GET | **Leads List**: Infinite scroll with filters (Status, Date). Pull-to-refresh. |
+| `/api/v1/leads` | POST | **Add Lead FAB**: Form to manually enter a walk-in or phone inquiry. |
+| `/api/v1/leads/:id` | GET | **Lead Detail**: View full profile, timeline, and history. |
+| `/api/v1/leads/:id` | PUT | **Edit Lead**: Full update of lead details (Name, Course, etc.). |
+| `/api/v1/leads/:id` | DELETE | **Delete**: Swipe-to-delete (Admin/Manager only). |
+| `/api/v1/leads/submit` | POST | **Kiosk Mode**: Public form for students to self-register (Tablet mode). |
+| `/api/v1/leads/:id/status` | PATCH | **Quick Action**: Change status (New -> Contacted) via BottomSheet. |
+| `/api/v1/leads/:id/transfer` | POST | **Transfer**: Manager reassigns specific lead to another agent. |
+| `/api/v1/leads/bulk-transfer` | POST | **Bulk Action**: Long-press multiple leads -> Assign to Agent X. |
+| `/api/v1/leads/export` | GET | **Export**: "Download Report" button (Excel/PDF) -> Save to Files. |
+
+---
+
+## 5. Communications & Smartflo (Calling) Module
+**Goal**: Integrated dialing and call tracking.
+
+| Endpoint | Method | Mobile Use Case |
+| :--- | :--- | :--- |
+| `/api/v1/leads/:id/call` | POST | **Call Button**: Triggers Click-to-Call (Agent Phone <-> Lead). |
+| `/api/v1/smartflo/active-call/:id` | GET | **Call Overlay**: Poll this every 2s after clicking Call to show status ("Ringing"...). |
+| `/api/v1/smartflo/call/hangup` | POST | **Hangup Button**: End the active call directly from the app. |
+| `/api/v1/smartflo/call/records` | GET | **Call Logs**: "History" tab showing past calls associated with a lead. |
+| `/api/v1/smartflo/live-calls` | GET | **Live Monitor**: (Admin Only) View real-time ongoing calls in the organization. |
+| `/api/v1/leads/:id/notes` | POST | **Call Disposition**: Add summary note immediately after a call ends. |
+| `/api/v1/leads/:id/notes` | GET | **Timeline**: View past interaction notes. |
+
+---
+
+## 6. Campaign & Asset Management Module
+**Goal**: Manage marketing assets and budgets (Tablet optimized).
+
+| Endpoint | Method | Mobile Use Case |
+| :--- | :--- | :--- |
+| `/api/v1/campaigns` | GET | **Campaigns List**: View active marketing campaigns. |
+| `/api/v1/campaigns` | POST | **Create Campaign**: (Manager) Launch new campaign. |
+| `/api/v1/campaigns/:id` | PUT | **Edit Campaign**: specific details. |
+| `/api/v1/campaigns/:id` | DELETE | **Remove**: Delete old campaign. |
+| `/api/v1/campaigns/:id/status` | PATCH | **Toggle**: Pause/Resume campaign. |
+| `/api/v1/budgets` | POST | **Request Budget**: Marketing submits budget request. |
+| `/api/v1/budgets/:id/approve` | PATCH | **Approval**: Finance approves budget (Push Notification Action). |
+| `/api/v1/proofs` | POST | **Upload Proof**: Camera/Gallery upload of receipt/screenshot. |
+| `/api/v1/proofs/:id/verify` | PATCH | **Verify**: Finance marks proof as valid. |
+| `/api/v1/assets` | GET | **Gallery**: Grid view of marketing assets (Images/Videos). |
+| `/api/v1/assets` | POST | **Upload Asset**: Upload creative material from phone gallery. |
+| `/api/v1/assets/:id/status` | PATCH | **Asset Review**: Approve/Reject creative assets. |
+
+---
+
+## 7. Accounting Module
+**Goal**: Financial tracking (Finance Team).
+
+| Endpoint | Method | Mobile Use Case |
+| :--- | :--- | :--- |
+| `/api/v1/accounting/payments` | GET | **Transactions**: List of payments made/received. |
+| `/api/v1/accounting/payments` | POST | **Record**: Manually log a payment. |
+| `/api/v1/accounting/ad-spends` | GET | **Spend Tracker**: View daily ad spend across platforms. |
+| `/api/v1/accounting/ad-spends` | POST | **Log Spend**: Enter daily spend amount manually. |
+
+---
+
+## 8. Search & Utility Module
+**Goal**: Global access and bulk operations.
+
+| Endpoint | Method | Mobile Use Case |
+| :--- | :--- | :--- |
+| `/api/v1/search?q=...` | GET | **Global Search**: Search Bar in App Bar (Leads, Campaigns, Users). |
+| `/api/v1/users` | GET | **Directory**: "Team" tab to view agent contact info/status. |
+| `/api/v1/users/:id` | GET | **User Profile**: View colleague details. |
+| `/api/v1/users` | POST | **Add User**: (Admin) Invite new team member. |
+| `/api/v1/leads/bulk/upload` | POST | **Not Recommended for Mobile**: (Hide or show "Use Web" message). |
+| `/api/v1/leads/bulk/template` | GET | **N/A for Mobile**: (Hide). |
+
+---
+
+## 9. Mobile-Specific Recommendations
+
+### Offline Mode (Hive)
+-   **Sync Strategy**:
+    -   Cache `GET /leads` response.
+    -   When offline, `POST /leads` or `POST /notes` should go to a local "Sync Queue".
+    -   Use `connectivity_plus` to detect network restoration -> Process Queue.
+
+### Smartflo Polling Logic
+-   Since mobile apps background easily, use a **Foreground Service** (Android) or **Background Fetch** (iOS - limited) if you need to keep polling active calls while the app is minimized.
+-   Ideally, keep the polling loop active only while the "Call Overlay" is visible on screen.
+
+### Push Notifications (Future)
+-   You currently have Webhooks. For mobile, you'd need **Firebase Cloud Messaging (FCM)**.
+-   Backend: When `smartflo/webhook` receives "answered", send FCM to user -> App opens Call Screen.
+
+### Deep Linking
+-   URL Scheme: `cms://`
+-   `cms://leads/123` -> Opens Lead Detail.
+-   `cms://campaigns/456` -> Opens Campaign.
+-   Useful for sharing links via WhatsApp between agents.

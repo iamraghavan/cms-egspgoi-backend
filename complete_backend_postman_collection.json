@@ -1,0 +1,631 @@
+{
+    "info": {
+        "_postman_id": "master-backend-collection",
+        "name": "Complete CMS Backend API",
+        "description": "Master collection containing ALL endpoints for the CMS Backend (Auth, Leads, Campaigns, Smartflo, Analytics, Accounting).",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "1. Authentication & Users",
+            "item": [
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"password123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/users/login"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Register (Sign Up)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"New User\",\n    \"email\": \"new@example.com\",\n    \"password\": \"password123\",\n    \"role\": \"Admission Executive\",\n    \"phone\": \"9876543210\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/users/register"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Refresh Token",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"refreshToken\": \"{{refresh_token}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/users/refresh"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Own Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/users/auth/profile"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Profile",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Updated Name\",\n    \"phone\": \"9998887776\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/users/auth/profile"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Toggle Availability",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/users/auth/availability"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Settings",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"preferences\": { \"theme\": \"dark\", \"notifications\": true }\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/users/auth/settings"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Admin: List Users",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/users"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "2. Leads Management",
+            "item": [
+                {
+                    "name": "List All Leads (Pagination & Filter)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/leads?limit=20&startDate=2024-01-01&status=New",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "leads"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "New"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Submit Lead (Public)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Student Name\",\n    \"phone\": \"9876543210\",\n    \"email\": \"student@test.com\",\n    \"course\": \"B.E CSE\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/leads/submit"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Lead (Internal)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Walk-in Student\",\n    \"phone\": \"9876543211\",\n    \"status\": \"New\",\n    \"source\": \"Walk-in\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/leads"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Lead Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/leads/{{lead_id}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Lead Status",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"status\": \"Contacted\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/leads/{{lead_id}}/status"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Add Note",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"content\": \"Spoke to father, interested in hostel.\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/leads/{{lead_id}}/notes"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Export Leads",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/leads/export?format=excel"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "3. Smartflo (Communications)",
+            "item": [
+                {
+                    "name": "Initiate Call (Click-to-Call)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/leads/{{lead_id}}/call"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Active Call Status (Poll)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/smartflo/active-call/{{lead_id}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Hangup Call",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"call_id\": \"{{active_call_id}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/smartflo/call/hangup"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Call Records",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/smartflo/call/records?limit=20"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Live Calls (Admin)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/smartflo/live-calls"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "4. Campaigns & Marketing",
+            "item": [
+                {
+                    "name": "List Campaigns",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/campaigns"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Campaign",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"New Campaign\",\n    \"type\": \"Digital\",\n    \"institution\": \"College\",\n    \"status\": \"draft\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/campaigns"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Upload Asset/Proof",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"campaign_id\": \"{{campaign_id}}\",\n    \"name\": \"Flyer\",\n    \"storage_url\": \"http://bucket/file.jpg\",\n    \"file_type\": \"image/jpeg\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/assets"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Request Budget",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"campaign_id\": \"{{campaign_id}}\",\n    \"amount\": 5000,\n    \"description\": \"FB Ads\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/budgets"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Approve Budget",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/budgets/{{budget_id}}/approve"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "5. Accounting (Finance)",
+            "item": [
+                {
+                    "name": "Get Payments",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/accounting/payments"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Record Payment",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"amount\": 1000,\n    \"type\": \"credit\",\n    \"category\": \"Fee\",\n    \"reference_id\": \"TXN123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/accounting/payments"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "6. Analytics",
+            "item": [
+                {
+                    "name": "Admin Stats",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/analytics/admin"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Executive Stats",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/analytics/executive"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "7. Search",
+            "item": [
+                {
+                    "name": "Global Search",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/search?q=john"
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "https://cms-egspgoi.vercel.app",
+            "type": "string"
+        },
+        {
+            "key": "token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "lead_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "campaign_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "active_call_id",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}
