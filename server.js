@@ -9,6 +9,9 @@ const { errorHandler } = require('./src/middleware/errorHandler');
 
 const app = express();
 
+// Trust Proxy (Required for Vercel/Heroku + Rate Limiting)
+app.set('trust proxy', 1);
+
 const config = require('./src/config/env');
 const { conditionalRequestMiddleware } = require('./src/middleware/conditionalRequest');
 
