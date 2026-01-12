@@ -165,15 +165,28 @@ const getLeads = async (req, res) => {
                 // Apply IN filter
                 filter.assigned_to = targetUserIds;
             }
+        } else {
+            // Apply IN filter
+            filter.assigned_to = targetUserIds;
         }
-
-        const result = await leadService.getLeadsFromDB(filter, limit, cursor, startDate, endDate);
-
-        const meta = formatPaginationMeta(result.cursor, result.count, limit);
-        sendSuccess(res, result.items, 'Leads fetched successfully', 200, meta);
-    } catch (error) {
-        sendError(res, error, 'Get Leads');
     }
+
+        // Standard Filters
+        if (req.query.status) filter.status = req.query.status;
+    if (req.query.pipeline_id) filter.pipeline_id = req.query.pipeline_id;
+    if (req.query.source) filter.source_website = req.query.source; // Map 'source' query to 'source_website' DB or 'source' DB field? Assuming 'source_website' or just 'source'. Let's check model.
+    // Checking leadModel usually helps but here usage suggests 'source_website'. Let's stick to user request 'source' param mapping to a field.
+    // Actually earlier code used 'source_website'. Let's verify.
+    if (req.query.search) filter.search = req.query.search;
+
+
+    const result = await leadService.getLeadsFromDB(filter, limit, cursor, startDate, endDate);
+
+    const meta = formatPaginationMeta(result.cursor, result.count, limit);
+    sendSuccess(res, result.items, 'Leads fetched successfully', 200, meta);
+} catch (error) {
+    sendError(res, error, 'Get Leads');
+}
 };
 
 // 4. Initiate Call

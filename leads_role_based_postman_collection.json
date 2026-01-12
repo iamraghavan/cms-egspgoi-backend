@@ -1,0 +1,277 @@
+{
+    "info": {
+        "_postman_id": "leads-role-based-collection",
+        "name": "Leads Module (Role-Based)",
+        "description": "Comprehensive Leads collection organized by User Role capabilities for Mobile App Development.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "1. Common Actions (All Roles)",
+            "description": "Available to Executive, Manager, and Super Admin.",
+            "item": [
+                {
+                    "name": "List Leads (Assigned to Me)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/leads?limit=20&assigned_to={{user_id}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Lead Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/leads/{{lead_id}}"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Lead (Manual Entry)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"New Student\",\n    \"phone\": \"9876543210\",\n    \"course\": \"B.E CSE\",\n    \"status\": \"New\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/leads"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Lead Status",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"status\": \"Follow Up\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/leads/{{lead_id}}/status"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Add Note (Call Disposition)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"content\": \"Student asked for fee structure.\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/leads/{{lead_id}}/notes"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Initiate Call (Smartflo)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/leads/{{lead_id}}/call"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Export Leads (My Data)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/leads/export?format=pdf"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "2. Manager & Admin Actions",
+            "description": "Restricted to Admission Manager and Super Admin.",
+            "item": [
+                {
+                    "name": "Transfer Lead (Single)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"new_agent_id\": \"{{target_agent_id}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/leads/{{lead_id}}/transfer"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Bulk Transfer Leads",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"lead_ids\": [\"{{lead_id_1}}\", \"{{lead_id_2}}\"],\n    \"new_agent_id\": \"{{target_agent_id}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": "{{base_url}}/api/v1/leads/bulk-transfer"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "View Team Leads (Filter by Role)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/leads?assigned_to_role_id={{executive_role_id}}"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "3. Super Admin Only",
+            "description": "Dangerous actions restricted to Super Admin.",
+            "item": [
+                {
+                    "name": "Hard Delete Lead",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/leads/{{lead_id}}?type=hard"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "View All Leads (System Wide)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/leads"
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "https://cms-egspgoi.vercel.app",
+            "type": "string"
+        },
+        {
+            "key": "token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "lead_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "user_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "target_agent_id",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}

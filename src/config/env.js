@@ -37,6 +37,10 @@ const config = {
     },
 
     jwtSecret: getEnv('JWT_SECRET'),
+
+    turnstile: {
+        secretKey: getEnv('TURNSTILE_SECRET_KEY', ''), // User provided default for now
+    }
 };
 
 module.exports = config;

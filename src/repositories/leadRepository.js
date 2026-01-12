@@ -110,9 +110,12 @@ class LeadRepository {
         if (Object.keys(filter).length > 0) {
             params.FilterExpression = Object.keys(filter)
                 .map((key, index) => {
-                    if (Array.isArray(filter[key])) {
+                    if (key === 'search') {
+                        // General Search (Name, Phone, Email) - case insensitive approach is hard in DynamoDB Scan without lowercasing data.
+                        // Standard contains() is case-sensitive.
+                        return `(contains(#field${index}, :value${index}) OR contains(phone, :value${index}) OR contains(email, :value${index}))`;
+                    } else if (Array.isArray(filter[key])) {
                         // Handle IN clause for Arrays
-                        // key IN (:val0, :val1, ...)
                         const valueKeys = filter[key].map((_, vIndex) => `:value${index}_${vIndex}`).join(', ');
                         return `#field${index} IN (${valueKeys})`;
                     } else {
@@ -126,15 +129,18 @@ class LeadRepository {
             params.ExpressionAttributeValues = {};
 
             Object.keys(filter).forEach((key, index) => {
-                params.ExpressionAttributeNames[`#field${index}`] = key;
-
-                if (Array.isArray(filter[key])) {
-                    // Map individual items in array to unique value keys
-                    filter[key].forEach((val, vIndex) => {
-                        params.ExpressionAttributeValues[`:value${index}_${vIndex}`] = val;
-                    });
-                } else {
+                if (key === 'search') {
+                    params.ExpressionAttributeNames[`#field${index}`] = 'name'; // Default primary search field
                     params.ExpressionAttributeValues[`:value${index}`] = filter[key];
+                } else {
+                    params.ExpressionAttributeNames[`#field${index}`] = key;
+                    if (Array.isArray(filter[key])) {
+                        filter[key].forEach((val, vIndex) => {
+                            params.ExpressionAttributeValues[`:value${index}_${vIndex}`] = val;
+                        });
+                    } else {
+                        params.ExpressionAttributeValues[`:value${index}`] = filter[key];
+                    }
                 }
             });
         }

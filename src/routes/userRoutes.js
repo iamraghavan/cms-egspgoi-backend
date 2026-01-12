@@ -6,7 +6,8 @@ const { checkPermission } = require('../middleware/rbacMiddleware');
 
 // Public routes
 router.post('/register', register); // In a real app, registration might be restricted
-router.post('/login', login);
+const { validateTurnstile } = require('../middleware/turnstileMiddleware');
+router.post('/login', validateTurnstile, login);
 router.post('/refresh', refreshToken);
 
 const { cacheMiddleware } = require('../middleware/cacheMiddleware');
