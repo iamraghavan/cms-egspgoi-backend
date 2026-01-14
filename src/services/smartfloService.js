@@ -117,8 +117,8 @@ const smartfloService = {
       // We pass it as 'custom_field' or 'ref_id' depending on API spec.
       // Based on docs, it's likely 'ref_id' or 'custom_data'. 
       // Assumption: 'ref_id' is the parameter name given the response variable matches it.
-      if (arguments[3]) { // check if refId was passed (we need to update signature too)
-        payload.ref_id = arguments[3];
+      if (refId) {
+        payload.ref_id = refId;
       }
 
       const response = await axios.post(`${SMARTFLO_BASE_URL}/click_to_call`, payload, { headers });
