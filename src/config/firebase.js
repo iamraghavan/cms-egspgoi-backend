@@ -14,15 +14,20 @@ try {
             try {
                 const serviceAccount = JSON.parse(serviceAccountStr);
                 credential = admin.credential.cert(serviceAccount);
+                console.log('[Firebase] Loaded credentials from FIREBASE_SERVICE_ACCOUNT');
             } catch (e) {
-                logger.error('Failed to parse FIREBASE_SERVICE_ACCOUNT JSON', e);
+                console.error('[Firebase] Failed to parse FIREBASE_SERVICE_ACCOUNT JSON:', e);
                 throw new Error('Invalid FIREBASE_SERVICE_ACCOUNT JSON');
             }
         } else {
-            // Fallback to Application Default Credentials (e.g. invalid in standard Vercel unless vars set differently)
-            // Or if using specific env vars for project ID etc.
-            // For development/standard setup, user usually provides key.
+            console.warn('[Firebase] FIREBASE_SERVICE_ACCOUNT not set. Using Application Default Credentials.');
             credential = admin.credential.applicationDefault();
+        }
+
+        if (!process.env.FIREBASE_DB_URL) {
+            console.error('[Firebase] FIREBASE_DB_URL is missing!');
+        } else {
+            console.log('[Firebase] Using Database URL:', process.env.FIREBASE_DB_URL);
         }
 
         admin.initializeApp({

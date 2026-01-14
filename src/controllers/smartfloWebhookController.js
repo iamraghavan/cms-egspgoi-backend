@@ -130,13 +130,15 @@ const handleWebhook = async (req, res) => {
         }
 
         // 4. Update Firebase Realtime Database
-        // This replaces the previous AppSync logic to provide real-time updates to frontend
         const { db, admin } = require('../config/firebase');
 
         if (db && refId) {
             try {
-                // Determine sync path, e.g., calls/{ref_id}
-                const callRef = db.ref(`calls/${refId}`);
+                // User requested name change (or distinct path). Using 'smartflo_calls' as a clean root.
+                const path = `smartflo_calls/${refId}`;
+                const callRef = db.ref(path);
+
+                console.log(`[Webhook] Writing to Firebase path: ${path} | Status: ${status}`);
 
                 // Write data
                 await callRef.set({
@@ -152,13 +154,14 @@ const handleWebhook = async (req, res) => {
                     updated_at: admin.database.ServerValue.TIMESTAMP
                 });
 
-                // logger.info(`Firebase updated for ref_id: ${refId}`);
+                console.log('[Webhook] Firebase write successful.');
             } catch (firebaseError) {
-                logger.error('Firebase Update Error:', firebaseError);
+                console.error('[Webhook] Firebase Update Error:', firebaseError);
                 // Don't block response on firebase error
             }
         } else {
-            if (!db) logger.warn('Firebase DB not initialized, skipping realtime update.');
+            if (!db) console.error('[Webhook] Firebase DB object is NULL. Check config.');
+            if (!refId) console.warn('[Webhook] ref_id missing, cannot write to Firebase.');
         }
 
         res.status(200).send('OK');
