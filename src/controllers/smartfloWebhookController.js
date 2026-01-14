@@ -70,8 +70,9 @@ const handleWebhook = async (req, res) => {
         }
 
         // 3. Store Call Info in DynamoDB 'CRMCalls'
-        const { docClient } = require('../config/db');
+        const { docClient, client } = require('../config/db');
         const { PutCommand } = require('@aws-sdk/lib-dynamodb');
+        const { CreateTableCommand, waitUntilTableExists } = require('@aws-sdk/client-dynamodb');
 
         const callRecord = {
             id: callId || require('uuid').v4(), // Partition Key
@@ -84,7 +85,41 @@ const handleWebhook = async (req, res) => {
             Item: callRecord
         });
 
-        await docClient.send(putCommand);
+        try {
+            await docClient.send(putCommand);
+        } catch (dbError) {
+            if (dbError.name === 'ResourceNotFoundException') {
+                logger.warn('CRMCalls table not found. Attempting to create...');
+                const createCommand = new CreateTableCommand({
+                    TableName: 'CRMCalls',
+                    KeySchema: [{ AttributeName: 'id', KeyType: 'HASH' }],
+                    AttributeDefinitions: [{ AttributeName: 'id', AttributeType: 'S' }],
+                    BillingMode: 'PAY_PER_REQUEST'
+                });
+
+                try {
+                    await client.send(createCommand);
+                    logger.info('Creating CRMCalls table... Waiting for active state.');
+
+                    // Wait up to 20 seconds for table to be active
+                    await waitUntilTableExists({ client, maxWaitTime: 20 }, { TableName: 'CRMCalls' });
+
+                    logger.info('CRMCalls table created. Retrying write...');
+                    await docClient.send(putCommand);
+                } catch (createError) {
+                    // Possible race condition (already creating) or permission error
+                    logger.error('Failed to auto-create table:', createError);
+                    if (createError.name === 'ResourceInUseException') {
+                        // Table is being created by another request, retry write after short delay? 
+                        // For now, let webhook system retry by returning error.
+                        throw new Error('Table creation in progress via another request.');
+                    }
+                    throw createError;
+                }
+            } else {
+                throw dbError;
+            }
+        }
 
         // 4. Push Update to AppSync Subscription
         // We trigger a mutation 'publishCallUpdate' (or similar) which subscription listens to.
