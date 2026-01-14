@@ -129,33 +129,36 @@ const handleWebhook = async (req, res) => {
             }
         }
 
-        // 4. Push Update to AppSync Subscription
-        // We trigger a mutation 'publishCallUpdate' (or similar) which subscription listens to.
-        const axios = require('axios');
-        const config = require('../config/env');
-        const appSyncUrl = config.appSync?.endpoint;
-        const apiKey = config.appSync?.apiKey;
+        // 4. Update Firebase Realtime Database
+        // This replaces the previous AppSync logic to provide real-time updates to frontend
+        const { db, admin } = require('../config/firebase');
 
-        if (appSyncUrl && apiKey) {
-            const mutation = `
-                mutation PublishCallUpdate($data: String!) {
-                    publishCallUpdate(data: $data) {
-                        data
-                    }
-                }
-            `;
+        if (db && refId) {
+            try {
+                // Determine sync path, e.g., calls/{ref_id}
+                const callRef = db.ref(`calls/${refId}`);
 
-            // Sending raw JSON string as 'data' payload to match generic subscription pattern
-            const variables = {
-                data: JSON.stringify(callRecord)
-            };
+                // Write data
+                await callRef.set({
+                    ref_id: refId,
+                    call_id: callId,
+                    status: status,
+                    to: customerNumber,
+                    from: agentNumber, // or callerId
+                    agent: agentNumber,
+                    start_time: eventData.start_stamp || getISTTimestamp(),
+                    direction: direction,
+                    customer: customerNumber,
+                    updated_at: admin.database.ServerValue.TIMESTAMP
+                });
 
-            await axios.post(
-                appSyncUrl,
-                { query: mutation, variables: variables },
-                { headers: { 'x-api-key': apiKey } }
-            );
-            // logger.info('Pushed to AWS AppSync');
+                // logger.info(`Firebase updated for ref_id: ${refId}`);
+            } catch (firebaseError) {
+                logger.error('Firebase Update Error:', firebaseError);
+                // Don't block response on firebase error
+            }
+        } else {
+            if (!db) logger.warn('Firebase DB not initialized, skipping realtime update.');
         }
 
         res.status(200).send('OK');
