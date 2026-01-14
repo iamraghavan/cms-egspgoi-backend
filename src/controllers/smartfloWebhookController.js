@@ -140,19 +140,33 @@ const handleWebhook = async (req, res) => {
 
                 console.log(`[Webhook] Writing to Firebase path: ${path} | Status: ${status}`);
 
-                // Write data
-                await callRef.set({
+                // Helper to remove undefined fields (Firebase rejects them)
+                const removeUndefined = (obj) => {
+                    return Object.fromEntries(
+                        Object.entries(obj).filter(([_, v]) => v !== undefined)
+                    );
+                };
+
+                // Create the data object (allowing undefined values initially)
+                const rawData = {
                     ref_id: refId,
                     call_id: callId,
                     status: status,
                     to: customerNumber,
-                    from: agentNumber, // or callerId
+                    from: agentNumber,
                     agent: agentNumber,
                     start_time: eventData.start_stamp || getISTTimestamp(),
                     direction: direction,
                     customer: customerNumber,
                     updated_at: admin.database.ServerValue.TIMESTAMP
-                });
+                };
+
+                // Sanitize it
+                const sanitizedData = removeUndefined(rawData);
+                console.log('[Webhook] Writing data:', JSON.stringify(sanitizedData));
+
+                // Write data
+                await callRef.set(sanitizedData);
 
                 console.log('[Webhook] Firebase write successful.');
             } catch (firebaseError) {
