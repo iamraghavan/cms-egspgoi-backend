@@ -148,7 +148,9 @@ const handleWebhook = async (req, res) => {
                 };
 
                 // Create the data object (allowing undefined values initially)
+                // Use spread ...eventData to capture ALL dynamic fields sent by Smartflo
                 const rawData = {
+                    ...eventData,
                     ref_id: refId,
                     call_id: callId,
                     status: status,
