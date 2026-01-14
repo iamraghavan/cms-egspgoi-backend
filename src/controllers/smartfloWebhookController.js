@@ -69,8 +69,51 @@ const handleWebhook = async (req, res) => {
             }
         }
 
-        // 3. (Optional) Log to a separate 'CallLogs' table if needed for analytics.
-        // For now, updating Lead is sufficient for the user's request.
+        // 3. Store Call Info in DynamoDB 'CRMCalls'
+        const { docClient } = require('../config/db');
+        const { PutCommand } = require('@aws-sdk/lib-dynamodb');
+
+        const callRecord = {
+            id: callId || require('uuid').v4(), // Partition Key
+            ...eventData,
+            created_at: getISTTimestamp()
+        };
+
+        const putCommand = new PutCommand({
+            TableName: 'CRMCalls',
+            Item: callRecord
+        });
+
+        await docClient.send(putCommand);
+
+        // 4. Push Update to AppSync Subscription
+        // We trigger a mutation 'publishCallUpdate' (or similar) which subscription listens to.
+        const axios = require('axios');
+        const config = require('../config/env');
+        const appSyncUrl = config.appSync?.endpoint;
+        const apiKey = config.appSync?.apiKey;
+
+        if (appSyncUrl && apiKey) {
+            const mutation = `
+                mutation PublishCallUpdate($data: String!) {
+                    publishCallUpdate(data: $data) {
+                        data
+                    }
+                }
+            `;
+
+            // Sending raw JSON string as 'data' payload to match generic subscription pattern
+            const variables = {
+                data: JSON.stringify(callRecord)
+            };
+
+            await axios.post(
+                appSyncUrl,
+                { query: mutation, variables: variables },
+                { headers: { 'x-api-key': apiKey } }
+            );
+            // logger.info('Pushed to AWS AppSync');
+        }
 
         res.status(200).send('OK');
     } catch (error) {

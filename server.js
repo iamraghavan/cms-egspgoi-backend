@@ -66,6 +66,7 @@ app.use('/api/v1', require('./src/routes/campaignRoutes'));
 app.use('/api/v1', require('./src/routes/leadRoutes'));
 app.use('/api/v1', require('./src/routes/accountingRoutes'));
 app.use('/api/v1/smartflo', require('./src/routes/smartfloWebhookRoutes'));
+app.use('/api/v1/webhook', require('./src/routes/webhookRoutes')); // Webhook Endpoint (Restored)
 app.use('/api/v1/analytics', cacheMiddleware(300), require('./src/routes/analyticsRoutes')); // Cache Analytics for 5 mins
 app.use('/api/v1/search', cacheMiddleware(60), require('./src/routes/searchRoutes')); // Cache Search for 1 min
 app.use('/api/v1/leads/bulk', require('./src/routes/bulkLeadRoutes'));
