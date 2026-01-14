@@ -74,8 +74,13 @@ const handleWebhook = async (req, res) => {
         const { PutCommand } = require('@aws-sdk/lib-dynamodb');
         const { CreateTableCommand, waitUntilTableExists } = require('@aws-sdk/client-dynamodb');
 
+        // Schema constraint: ref_id is PK, call_id is SK.
+        // If ref_id is missing (rare but possible), we fallback to 'unknown' or uuid to prevent Primary Key errors.
+        const partitionKey = refId || `unknown-${callId}`;
+
         const callRecord = {
-            id: callId || require('uuid').v4(), // Partition Key
+            ref_id: partitionKey,      // Partition Key
+            call_id: callId,           // Sort Key
             ...eventData,
             created_at: getISTTimestamp()
         };
@@ -92,8 +97,14 @@ const handleWebhook = async (req, res) => {
                 logger.warn('CRMCalls table not found. Attempting to create...');
                 const createCommand = new CreateTableCommand({
                     TableName: 'CRMCalls',
-                    KeySchema: [{ AttributeName: 'id', KeyType: 'HASH' }],
-                    AttributeDefinitions: [{ AttributeName: 'id', AttributeType: 'S' }],
+                    KeySchema: [
+                        { AttributeName: 'ref_id', KeyType: 'HASH' },
+                        { AttributeName: 'call_id', KeyType: 'RANGE' }
+                    ],
+                    AttributeDefinitions: [
+                        { AttributeName: 'ref_id', AttributeType: 'S' },
+                        { AttributeName: 'call_id', AttributeType: 'S' }
+                    ],
                     BillingMode: 'PAY_PER_REQUEST'
                 });
 
@@ -107,11 +118,8 @@ const handleWebhook = async (req, res) => {
                     logger.info('CRMCalls table created. Retrying write...');
                     await docClient.send(putCommand);
                 } catch (createError) {
-                    // Possible race condition (already creating) or permission error
                     logger.error('Failed to auto-create table:', createError);
                     if (createError.name === 'ResourceInUseException') {
-                        // Table is being created by another request, retry write after short delay? 
-                        // For now, let webhook system retry by returning error.
                         throw new Error('Table creation in progress via another request.');
                     }
                     throw createError;
