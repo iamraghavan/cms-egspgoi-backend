@@ -16,7 +16,11 @@ const handleWebhook = async (req, res) => {
         const refId = eventData.ref_id || eventData.custom_field;
         const callId = eventData.call_id || eventData.uuid;
         const status = eventData.call_status || 'unknown';
-        const direction = eventData.direction; // 'inbound', 'outbound', 'click_to_call'
+        let direction = eventData.direction; // 'inbound', 'outbound', 'click_to_call'
+        // Normalize 'click_to_call' to 'outbound' as per user request
+        if (direction === 'click_to_call' || direction === 'dialer') {
+            direction = 'outbound';
+        }
         const duration = parseInt(eventData.duration || eventData.billsec || '0', 10);
         const recordingUrl = eventData.recording_url;
         const agentNumber = eventData.agent_number || eventData.answered_agent_number;
