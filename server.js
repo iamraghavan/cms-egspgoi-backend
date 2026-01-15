@@ -60,39 +60,27 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Admissions CRM API' });
 });
 
-const authRoutes = require('./src/routes/userRoutes');
-const userRoutes = require('./src/routes/userRoutes');
-const leadRoutes = require('./src/routes/leadRoutes');
-const campaignRoutes = require('./src/routes/campaignRoutes');
-const accountingRoutes = require('./src/routes/accountingRoutes');
-const searchRoutes = require('./src/routes/searchRoutes');
-const analyticsRoutes = require('./src/routes/analyticsRoutes');
-const bulkLeadRoutes = require('./src/routes/bulkLeadRoutes');
-const smartfloRoutes = require('./src/routes/smartfloWebhookRoutes'); // Renamed from smartfloWebhookRoutes to smartfloRoutes
-const geminiRoutes = require('./src/routes/geminiRoutes');
-const webhookRoutes = require('./src/routes/webhookRoutes');
-const smartfloApiRoutes = require('./src/routes/smartfloApiRoutes'); // Proxy routes
-const notificationRoutes = require('./src/routes/notificationRoutes');
+app.use('/api/v1/auth', authLimiter, require('./src/routes/userRoutes'));
+app.use('/api/v1/users', require('./src/routes/userRoutes'));
+app.use('/api/v1', require('./src/routes/campaignRoutes'));
+app.use('/api/v1', require('./src/routes/leadRoutes'));
+app.use('/api/v1', require('./src/routes/accountingRoutes'));
+app.use('/api/v1/smartflo', require('./src/routes/smartfloWebhookRoutes'));
+app.use('/api/v1/webhook', require('./src/routes/webhookRoutes')); // Webhook Endpoint (Restored)
+app.use('/api/v1/analytics', cacheMiddleware(300), require('./src/routes/analyticsRoutes')); // Cache Analytics for 5 mins
+app.use('/api/v1/search', cacheMiddleware(60), require('./src/routes/searchRoutes')); // Cache Search for 1 min
+app.use('/api/v1/leads/bulk', require('./src/routes/bulkLeadRoutes'));
+// app.use('/api/v1/gemini', require('./src/routes/geminiRoutes'));
+app.use('/api/v1/smartflo', require('./src/routes/smartfloApiRoutes'));
+app.use('/api/v1/smartflo-api', require('./src/routes/smartfloApiRoutes'));
+app.use('/api/v1/notifications', require('./src/routes/notificationRoutes'));
 
-const API_PREFIX = '/api/v1';
 
-app.use(`${API_PREFIX}/auth`, authLimiter, authRoutes); // Apply authLimiter to auth routes
-app.use(`${API_PREFIX}/users`, userRoutes); // This includes the new /device-token route
-app.use(`${API_PREFIX}/leads`, leadRoutes);
-app.use(`${API_PREFIX}/campaigns`, campaignRoutes);
-app.use(`${API_PREFIX}/accounting`, accountingRoutes);
-app.use(`${API_PREFIX}/search`, cacheMiddleware(60), searchRoutes); // Cache Search for 1 min
-app.use(`${API_PREFIX}/analytics`, cacheMiddleware(300), analyticsRoutes); // Cache Analytics for 5 mins
-app.use(`${API_PREFIX}/bulk-leads`, bulkLeadRoutes); // New
-app.use(`${API_PREFIX}/smartflo`, smartfloRoutes);
-app.use(`${API_PREFIX}/ai`, geminiRoutes);
-app.use(`${API_PREFIX}/webhook`, webhookRoutes);
-app.use(`${API_PREFIX}/smartflo-api`, smartfloApiRoutes);
-app.use(`${API_PREFIX}/notifications`, notificationRoutes);
+
 
 // Error Handler
 app.use(errorHandler);
 
 module.exports = app;
 
-// 02
+// 01
