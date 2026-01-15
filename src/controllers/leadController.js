@@ -456,11 +456,53 @@ const exportLeads = async (req, res) => {
     }
 };
 
+// 16. Get Call Logs (Firebase History)
+const getCallLogs = async (req, res) => {
+    try {
+        const { id } = req.params; // Lead ID
+        const { db } = require('../config/firebase');
+
+        if (!db) {
+            return sendError(res, { message: 'Firebase not initialized' }, 'Get Call Logs', 500);
+        }
+
+        const ref = db.ref('smartflo_calls');
+
+        // Query logic:
+        // We want all keys starting with "LeadID__"
+        // StartAt: "LeadID__"
+        // EndAt: "LeadID__\uf8ff" (Lexicographically last character coverage)
+
+        const snapshot = await ref
+            .orderByKey()
+            .startAt(`${id}__`)
+            .endAt(`${id}__\uf8ff`)
+            .once('value');
+
+        const data = snapshot.val();
+
+        // Convert object to array (sorted by timestamp if possible, but Firebase returns key-sorted)
+        // Since UUIDs are not time-sorted, we might need client-side sorting.
+        const logs = data ? Object.values(data) : [];
+
+        // Sort by timestamp descending (newest first)
+        logs.sort((a, b) => {
+            const tA = new Date(a.start_time || a.start_stamp || 0).getTime();
+            const tB = new Date(b.start_time || b.start_stamp || 0).getTime();
+            return tB - tA;
+        });
+
+        sendSuccess(res, logs, 'Call logs fetched successfully');
+    } catch (error) {
+        sendError(res, error, 'Get Call Logs');
+    }
+};
+
 
 module.exports = {
     createLead, getLeads, initiateCall, submitLead, addNote, getLeadNotes,
     transferLead, updateLeadStatus, deleteLead, headLead, optionsLead, putLead,
-    bulkTransferLeads, getLead, exportLeads
+    bulkTransferLeads, getLead, exportLeads, getCallLogs
 };
 
 // End of controller

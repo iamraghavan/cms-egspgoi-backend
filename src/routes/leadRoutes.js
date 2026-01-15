@@ -25,6 +25,7 @@ router.post('/leads/:id/call', authenticate, (req, res, next) => {
 
 router.post('/leads/:id/notes', authenticate, addNote);
 router.get('/leads/:id/notes', authenticate, getLeadNotes);
+router.get('/leads/:id/call-logs', authenticate, require('../controllers/leadController').getCallLogs);
 router.post('/leads/:id/transfer', authenticate, (req, res, next) => {
     if (req.user.role === 'Super Admin' || req.user.role === 'Admission Manager') {
         next();
