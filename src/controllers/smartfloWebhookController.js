@@ -27,13 +27,17 @@ const handleWebhook = async (req, res) => {
         const customerNumber = eventData.customer_number || eventData.call_to_number;
 
         // 2. Dynamic Relationship: If we have a Ref ID (Lead ID), update the Lead
+        // 2. Dynamic Relationship: If we have a Ref ID (Lead ID), update the Lead
         if (refId) {
+            // Extract basic Lead ID if composite (format: LeadID__UUID)
+            const realLeadId = refId.includes('__') ? refId.split('__')[0] : refId;
+
             // Check if it's a UUID (Lead ID)
-            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(refId);
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(realLeadId);
 
             if (isUuid) {
-                // Fetch current lead to append call log
-                const lead = await leadService.getLeadById(refId);
+                // Fetch current lead to append call log (Using parsed ID)
+                const lead = await leadService.getLeadById(realLeadId);
                 if (lead) {
                     const newCallLog = {
                         call_id: callId,
@@ -67,8 +71,8 @@ const handleWebhook = async (req, res) => {
                     // Update last contacted
                     updates.last_contacted_at = getISTTimestamp();
 
-                    await leadService.updateLeadInDB(refId, updates);
-                    logger.info(`Updated Lead ${refId} from Webhook. Status: ${status}`);
+                    await leadService.updateLeadInDB(realLeadId, updates);
+                    logger.info(`Updated Lead ${realLeadId} from Webhook. Status: ${status}`);
                 }
             }
         }

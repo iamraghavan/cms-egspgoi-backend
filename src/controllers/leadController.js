@@ -198,22 +198,28 @@ const initiateCall = async (req, res) => {
 
         if (!lead) return sendError(res, { message: 'Lead not found' }, 'Initiate Call', 404);
 
-        // Pass user's agent number, destination, callerId (optional), and Lead ID (as ref_id)
+        const { v4: uuidv4 } = require('uuid');
+        // Generate a composite ID: LeadID__UniqueSessionID
+        // This ensures:
+        // 1. Uniqueness for Firebase (smartflo_calls/{composite_id})
+        // 2. Retrievability of Lead ID (split by '__') for backend logging
+        const callRefId = `${id}__${uuidv4()}`;
+
+        // Pass user's agent number, destination, callerId (optional), and UNIQUE composite ID
         const response = await clickToCall(
             agentNumber,
             lead.phone,
             callerId,
-            id // ref_id (using lead ID)
+            callRefId
         );
 
         // Send success with instruction to poll
-        // CRITICAL: We override the 'ref_id' from Smartflo (which is a session ID) with OUR 'id' (Lead ID).
-        // This ensures the Frontend polls the correct Firebase path: smartflo_calls/{LeadID}
+        // CRITICAL: Return the UNIQUE callRefId so frontend polls the specific call instance
         sendSuccess(res, {
             ...response,
-            ref_id: id,
+            ref_id: callRefId,
             action: 'poll_active_call',
-            poll_url: `/api/v1/smartflo/active-call/${id}`
+            poll_url: `/api/v1/smartflo/active-call/${callRefId}`
         }, 'Call initiated. Please poll for active call status.');
     } catch (error) {
         sendError(res, error, 'Initiate Call');
