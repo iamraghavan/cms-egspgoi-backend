@@ -481,10 +481,28 @@ const getCallLogs = async (req, res) => {
 
         const data = snapshot.val();
 
+        let debugInfo = { queried_path: 'smartflo_calls', start_key: startKey, end_key: endKey, results_count: 0 };
+
         if (data) {
             console.log(`[CallLogs] Found ${Object.keys(data).length} records. Keys:`, Object.keys(data));
+            debugInfo.results_count = Object.keys(data).length;
+            debugInfo.can_read_db = true;
         } else {
-            console.log('[CallLogs] No data found.');
+            console.log('[CallLogs] No data found. Attempting diagnostic read...');
+            try {
+                // Try reading ANY single record to confirm DB connectivity and permission
+                const diagSnapshot = await ref.limitToLast(1).once('value');
+                const diagData = diagSnapshot.val();
+
+                debugInfo.can_read_db = !!diagData;
+                debugInfo.sample_record_key = diagData ? Object.keys(diagData)[0] : 'NONE_FOUND';
+
+                console.log('[CallLogs] Diagnostic Read Result:', debugInfo);
+            } catch (diagErr) {
+                debugInfo.can_read_db = false;
+                debugInfo.error = diagErr.message;
+                console.error('[CallLogs] Diagnostic Read Failed:', diagErr);
+            }
         }
 
         // Convert object to array (sorted by timestamp if possible, but Firebase returns key-sorted)
@@ -498,7 +516,7 @@ const getCallLogs = async (req, res) => {
             return tB - tA;
         });
 
-        sendSuccess(res, logs, 'Call logs fetched successfully');
+        sendSuccess(res, logs, 'Call logs fetched successfully', 200, { debug: debugInfo });
     } catch (error) {
         sendError(res, error, 'Get Call Logs');
     }
