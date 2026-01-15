@@ -1,11 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getProfile, getUsers, createUser, refreshToken, toggleAvailability, updateUser, deleteUser } = require('../controllers/userController');
+const userController = require('../controllers/userController');
 const { authenticate } = require('../middleware/authMiddleware');
 const { checkPermission } = require('../middleware/rbacMiddleware');
 
 // Public routes
-router.post('/register', register); // In a real app, registration might be restricted
 router.post('/register', userController.register); // In a real app, registration might be restricted
 const { validateTurnstile } = require('../middleware/turnstileMiddleware');
 router.post('/login', validateTurnstile, userController.login);
@@ -19,10 +18,13 @@ router.patch('/users/profile', authenticate, userController.updateProfile); // U
 router.post('/users/device-token', authenticate, userController.updateDeviceToken);
 
 // User Management (Admin/Manager)
-router.post('/auth/refresh', userController.refreshToken); // This seems like a duplicate of the public one, consider removing or clarifying
+router.post('/auth/refresh', userController.refreshToken);
 router.patch('/auth/availability', authenticate, userController.toggleAvailability);
 router.put('/auth/settings', authenticate, require('../controllers/userSettingsController').updateSettings);
-router.put('/:id', authenticate, checkPermission('all'), updateUser); // Only Super Admin
-router.delete('/:id', authenticate, checkPermission('all'), deleteUser); // Only Super Admin
+router.get('/', authenticate, userController.getUsers); // Authenticated users can get list
+router.post('/', authenticate, checkPermission('all'), userController.createUser); // Only Super Admin
+router.get('/:id', authenticate, userController.getUserById); // Get User Details
+router.put('/:id', authenticate, checkPermission('all'), userController.updateUser); // Only Super Admin
+router.delete('/:id', authenticate, checkPermission('all'), userController.deleteUser); // Only Super Admin
 
 module.exports = router;
