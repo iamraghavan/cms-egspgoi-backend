@@ -562,4 +562,32 @@ const updateProfile = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile, getUsers, getUserById, createUser, refreshToken, toggleAvailability, updateUser, deleteUser, updateProfile };
+const updateDeviceToken = async (req, res) => {
+  try {
+    const { id } = req.user;
+    const { fcm_token } = req.body;
+
+    if (!fcm_token) {
+      return res.status(400).json({ message: 'fcm_token is required' });
+    }
+
+    const command = new UpdateCommand({
+      TableName: USERS_TABLE,
+      Key: { id },
+      UpdateExpression: "set fcm_token = :t, updated_at = :time",
+      ExpressionAttributeValues: {
+        ":t": fcm_token,
+        ":time": getISTTimestamp()
+      },
+      ReturnValues: "ALL_NEW"
+    });
+
+    const result = await docClient.send(command);
+    res.json({ message: 'Device token updated', user: result.Attributes });
+  } catch (error) {
+    console.error('Update Device Token Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { register, login, getProfile, getUsers, getUserById, createUser, refreshToken, toggleAvailability, updateUser, deleteUser, updateProfile, updateDeviceToken };
