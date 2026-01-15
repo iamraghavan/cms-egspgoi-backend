@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { hangupCall, getCallRecords, getActiveCall, getLiveCalls } = require('../controllers/smartfloController');
+const { hangupCall, getCallRecords, getActiveCall, getLiveCalls, clickToCall } = require('../controllers/smartfloController');
+const { checkPermission } = require('../middleware/rbacMiddleware');
 
 // Hangup a call
 router.post('/call/hangup', hangupCall);
@@ -15,6 +16,6 @@ router.get('/live-calls', getLiveCalls);
 router.get('/active-call/:lead_id', getActiveCall);
 
 // Click to Call (Admission Executive and above)
-router.post('/click-to-call', checkPermission('click_to_call'), smartfloController.clickToCall);
+router.post('/click-to-call', checkPermission('click_to_call'), clickToCall);
 
 module.exports = router;
