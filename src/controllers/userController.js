@@ -116,6 +116,7 @@ const login = async (req, res) => {
     res.json({
       message: 'Login successful',
       accessToken,
+      refreshToken, // Returned for Mobile App storage (Biometric Login)
       user: {
         id: user.id,
         name: user.name,
@@ -316,9 +317,9 @@ const createUser = async (req, res) => {
 
 const refreshToken = async (req, res) => {
   const cookies = req.cookies;
-  if (!cookies?.refreshToken) return res.status(401).json({ message: 'Refresh Token required' });
+  const refreshToken = cookies?.refreshToken || req.body.refreshToken;
 
-  const refreshToken = cookies.refreshToken;
+  if (!refreshToken) return res.status(401).json({ message: 'Refresh Token required' });
 
   try {
     const decoded = verifyRefreshToken(refreshToken);
