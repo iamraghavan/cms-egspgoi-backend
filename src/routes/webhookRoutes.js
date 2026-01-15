@@ -14,8 +14,13 @@ const verifySecret = (req, res, next) => {
     next();
 };
 
-// 1. Smartflo Webhook
-// Endpoint: /api/v1/webhook/smartflo
-router.post('/smartflo', verifySecret, handleWebhook);
+// 1. Smartflo Webhooks
+// Unified endpoint (Legacy support removed)
+// router.post('/smartflo', verifySecret, handleWebhook);
+
+// 2. Specific Triggers (New Architecture)
+router.post('/smartflo/agent/answered', verifySecret, handleWebhook);
+router.post('/smartflo/customer/answered', verifySecret, handleWebhook);
+router.post('/smartflo/call/completed', verifySecret, handleWebhook);
 
 module.exports = router;

@@ -207,8 +207,11 @@ const initiateCall = async (req, res) => {
         );
 
         // Send success with instruction to poll
+        // CRITICAL: We override the 'ref_id' from Smartflo (which is a session ID) with OUR 'id' (Lead ID).
+        // This ensures the Frontend polls the correct Firebase path: smartflo_calls/{LeadID}
         sendSuccess(res, {
             ...response,
+            ref_id: id,
             action: 'poll_active_call',
             poll_url: `/api/v1/smartflo/active-call/${id}`
         }, 'Call initiated. Please poll for active call status.');
