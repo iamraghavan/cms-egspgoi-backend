@@ -60,7 +60,7 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Admissions CRM API' });
 });
 
-const authRoutes = require('./src/routes/authRoutes');
+const authRoutes = require('./src/routes/userRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const leadRoutes = require('./src/routes/leadRoutes');
 const campaignRoutes = require('./src/routes/campaignRoutes');
