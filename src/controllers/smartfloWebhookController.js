@@ -73,6 +73,31 @@ const handleWebhook = async (req, res) => {
 
                     await leadService.updateLeadInDB(realLeadId, updates);
                     logger.info(`Updated Lead ${realLeadId} from Webhook. Status: ${status}`);
+
+                    // NOTIFICATIONS
+                    if (lead.assigned_to) {
+                        const { sendToUser } = require('../services/notificationService');
+                        const lowerStatus = status.toLowerCase();
+
+                        // 1. Missed Call
+                        if (lowerStatus === 'missed') {
+                            await sendToUser(
+                                lead.assigned_to,
+                                'Missed Call Alert',
+                                `Missed call from Lead ${customerNumber}`,
+                                { type: 'missed_call', lead_id: realLeadId, phone: customerNumber }
+                            );
+                        }
+                        // 2. Call Answered (Prompt for Notes)
+                        else if (lowerStatus.includes('answered')) {
+                            await sendToUser(
+                                lead.assigned_to,
+                                'Call Ended',
+                                'Don\'t forget to add notes for this call.',
+                                { type: 'add_notes', lead_id: realLeadId }
+                            );
+                        }
+                    }
                 }
             }
         }

@@ -55,6 +55,15 @@ const register = async (req, res) => {
 
     // Remove password hash from response
     delete newUser.password_hash;
+    // Notify Admins
+    const { sendToRole } = require('../services/notificationService');
+    await sendToRole(
+      'Super Admin',
+      'New Staff Registered',
+      `${name} has joined as ${designation || 'Staff'}.`,
+      { type: 'new_user', user_id: userId }
+    );
+
     res.status(201).json({ message: 'User registered successfully', user: newUser });
   } catch (error) {
     console.error(error);

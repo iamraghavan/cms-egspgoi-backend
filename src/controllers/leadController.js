@@ -267,6 +267,15 @@ const transferLead = async (req, res) => {
         const updated = await leadService.updateLeadInDB(id, { assigned_to: new_agent_id });
         if (!updated) return sendError(res, { message: 'Lead not found' }, 'Transfer Lead', 404);
 
+        // Notify New Agent
+        const { sendToUser } = require('../services/notificationService');
+        await sendToUser(
+            new_agent_id,
+            'New Lead Assigned',
+            `You have been assigned to lead ${id}`, // Ideally fetch lead name, but keeping it efficient
+            { type: 'lead_assigned', lead_id: id }
+        );
+
         sendSuccess(res, null, 'Lead transferred successfully');
     } catch (error) {
         sendError(res, error, 'Transfer Lead');
