@@ -468,18 +468,24 @@ const getCallLogs = async (req, res) => {
 
         const ref = db.ref('smartflo_calls');
 
-        // Query logic:
-        // We want all keys starting with "LeadID__"
-        // StartAt: "LeadID__"
-        // EndAt: "LeadID__\uf8ff" (Lexicographically last character coverage)
+        const startKey = `${id}__`;
+        const endKey = `${id}__\uf8ff`;
+
+        console.log(`[CallLogs] Querying smartflo_calls: startAt=${startKey} endAt=${endKey}`);
 
         const snapshot = await ref
             .orderByKey()
-            .startAt(`${id}__`)
-            .endAt(`${id}__\uf8ff`)
+            .startAt(startKey)
+            .endAt(endKey)
             .once('value');
 
         const data = snapshot.val();
+
+        if (data) {
+            console.log(`[CallLogs] Found ${Object.keys(data).length} records. Keys:`, Object.keys(data));
+        } else {
+            console.log('[CallLogs] No data found.');
+        }
 
         // Convert object to array (sorted by timestamp if possible, but Firebase returns key-sorted)
         // Since UUIDs are not time-sorted, we might need client-side sorting.
