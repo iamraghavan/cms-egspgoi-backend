@@ -137,55 +137,104 @@ const getAdminStats = async (req, res) => {
 // --- ADMISSION MANAGER ---
 const getAdmissionStats = async (req, res) => {
     try {
+        const { startDate, endDate, range } = req.query;
+
+        // 1. Calculate Date Range (Identical logic to Admin)
+        const now = new Date();
+        let start = new Date(0);
+        let end = new Date();
+
+        if (startDate && endDate) {
+            start = new Date(startDate);
+            end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+        } else if (range) {
+            const days = parseInt(range) || 30;
+            start = new Date();
+            start.setDate(now.getDate() - days);
+        }
+
+        const startTs = start.getTime();
+        const endTs = end.getTime();
+
         const [leads, users] = await Promise.all([
             scanAll(LEADS_TABLE),
             scanAll(USERS_TABLE)
         ]);
 
-        // Define "Today"
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        // 2. Filter Leads by Date (Created At)
+        const filteredLeads = leads.filter(l => {
+            if (!l.created_at) return false;
+            const d = new Date(l.created_at).getTime();
+            return d >= startTs && d <= endTs;
+        });
 
+        // 3. Snapshot Metrics (Ignore Date Range for "Current State")
         const unassignedCount = leads.filter(l => !l.assigned_to || l.assigned_to === 'unassigned').length;
 
-        // Today's Conversions
-        // Note: created_at is not good for "Conversion Date", but update_at is noisy.
-        // Ideally we need status_history. For MVP, we check status=Enrolled AND updated_at=Today
-        const todayConversions = leads.filter(l =>
-            (l.status === 'Enrolled' || l.status === 'Converted') &&
-            new Date(l.updated_at).getTime() >= startOfDay
-        ).length;
+        // 4. KPIs (Based on filtered range)
+        const totalLeads = filteredLeads.length;
+        const convertedLeads = filteredLeads.filter(l => ['Enrolled', 'Converted', 'enrolled', 'converted'].includes(l.status)).length;
 
-        // Leaderboard
+        // 5. Leaderboard (Agent Performance in this Date Range)
         const agentMap = {};
-        leads.forEach(l => {
-            if (l.assigned_to) {
+        filteredLeads.forEach(l => {
+            if (l.assigned_to && l.assigned_to !== 'unassigned') {
                 if (!agentMap[l.assigned_to]) agentMap[l.assigned_to] = { leads: 0, conversions: 0 };
                 agentMap[l.assigned_to].leads++;
-                if (l.status === 'Enrolled' || l.status === 'Converted') agentMap[l.assigned_to].conversions++;
+                if (['Enrolled', 'Converted', 'enrolled', 'converted'].includes(l.status)) {
+                    agentMap[l.assigned_to].conversions++;
+                }
             }
         });
 
-        // Enrich with Names
         const leaderboard = Object.keys(agentMap).map(uid => {
             const user = users.find(u => u.id === uid);
+            const data = agentMap[uid];
             return {
                 id: uid,
                 name: user ? user.name : 'Unknown',
-                ...agentMap[uid]
+                leads: data.leads,
+                conversions: data.conversions,
+                conversionRate: data.leads > 0 ? ((data.conversions / data.leads) * 100).toFixed(1) : 0
             };
-        }).sort((a, b) => b.conversions - a.conversions).slice(0, 5); // Top 5
+        }).sort((a, b) => b.conversions - a.conversions);
+
+        // 6. Source Breakdown
+        const sourceBreakdown = filteredLeads.reduce((acc, lead) => {
+            const src = lead.source_website || 'Walk-in/Unknown';
+            acc[src] = (acc[src] || 0) + 1;
+            return acc;
+        }, {});
+
+        // 7. Charts: Daily Conversions & Leads
+        const getDailyTrend = (items, dateField = 'created_at') => {
+            const trend = {};
+            items.forEach(item => {
+                if (!item[dateField]) return;
+                const d = new Date(item[dateField]).toISOString().split('T')[0];
+                if (!trend[d]) trend[d] = 0;
+                trend[d]++;
+            });
+            return Object.keys(trend).sort().map(date => ({ date, value: trend[date] }));
+        };
+
+        const charts = {
+            daily_leads: getDailyTrend(filteredLeads),
+            daily_conversions: getDailyTrend(filteredLeads.filter(l => ['Enrolled', 'Converted', 'enrolled', 'converted'].includes(l.status)))
+        };
 
         const stats = {
-            unassignedLeads: unassignedCount,
-            todayConversions,
-            totalLeads: leads.length,
-            leaderboard,
-            sourceBreakdown: leads.reduce((acc, lead) => {
-                const src = lead.source_website || 'Unknown';
-                acc[src] = (acc[src] || 0) + 1;
-                return acc;
-            }, {})
+            meta: { startDate: start.toISOString(), endDate: end.toISOString() },
+            kpi: {
+                unassigned_leads: { value: unassignedCount, label: 'Unassigned (Total)' },
+                total_leads_period: { value: totalLeads, label: 'New Leads (Period)' },
+                conversions_period: { value: convertedLeads, label: 'Conversions (Period)' },
+                conversion_rate: { value: totalLeads > 0 ? ((convertedLeads / totalLeads) * 100).toFixed(1) : 0, label: 'Conversion Rate %' }
+            },
+            leaderboard, // Array of agents
+            source_breakdown: sourceBreakdown, // Object { 'google': 10 }
+            charts
         };
 
         res.json(stats);
