@@ -91,6 +91,16 @@ const submitLead = async (req, res) => {
             };
             meta.assignment_strategy = 'weighted_equal_distribution';
             message = 'Lead submitted and assigned successfully';
+
+            // Notify Assigned Agent
+            const { sendToUser } = require('../services/notificationService');
+            // We don't await this to keep public API fast
+            sendToUser(
+                result.assignedUser.id,
+                'New Lead Assigned',
+                `New Website Lead: ${name}`,
+                { type: 'lead_assigned', lead_id: result.lead.id }
+            ).catch(err => console.error('Notification Error:', err));
         }
 
         sendSuccess(res, responseData, message, 201, meta);
@@ -292,6 +302,18 @@ const updateLeadStatus = async (req, res) => {
         const updated = await leadService.updateLeadInDB(id, { status });
         if (!updated) return sendError(res, { message: 'Lead not found' }, 'Update Status', 404);
 
+        // Milestone Notification
+        if (status === 'Enrolled' || status === 'Converted') {
+            const { sendToUser } = require('../services/notificationService');
+            // Notify the user who did the update (req.user.id)
+            await sendToUser(
+                req.user.id,
+                'Lead Converted! 🚀',
+                'Great job! You have successfully enrolled a student.',
+                { type: 'achievement', lead_id: id }
+            );
+        }
+
         sendSuccess(res, { status }, 'Status updated successfully');
     } catch (error) {
         sendError(res, error, 'Update Lead Status');
@@ -376,6 +398,15 @@ const bulkTransferLeads = async (req, res) => {
         }
 
         const result = await leadService.bulkAssignLeads(lead_ids, new_agent_id);
+
+        // Notify New Agent (Summary)
+        const { sendToUser } = require('../services/notificationService');
+        await sendToUser(
+            new_agent_id,
+            'New Leads Assigned',
+            `You have been assigned ${lead_ids.length} new leads.`,
+            { type: 'lead_assigned_bulk', count: lead_ids.length }
+        );
 
         sendSuccess(res, result, 'Bulk transfer completed');
     } catch (error) {

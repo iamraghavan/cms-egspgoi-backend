@@ -20,15 +20,16 @@ const leadSchema = Joi.object({
   assigned_to: Joi.string().uuid().allow(null), // Can be null for auto-assignment later
   notes: Joi.array().items(
     Joi.object({
-        content: Joi.string().required(),
-        author_id: Joi.string().required(),
-        author_name: Joi.string().optional(),
-        created_at: Joi.string().required()
+      content: Joi.string().required(),
+      author_id: Joi.string().required(),
+      author_name: Joi.string().optional(),
+      created_at: Joi.string().required()
     })
   ).default([]),
   status: Joi.string().default('new'),
   is_deleted: Joi.boolean().default(false),
   deleted_at: Joi.string().allow(null),
+  next_follow_up_date: Joi.string().isoDate().allow(null),
   created_at: Joi.string(),
   updated_at: Joi.string()
 });

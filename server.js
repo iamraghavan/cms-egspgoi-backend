@@ -78,6 +78,9 @@ app.use('/api/v1/notifications', require('./src/routes/notificationRoutes'));
 
 
 
+// Crons
+require('./src/cron/notificationCron');
+
 // Error Handler
 app.use(errorHandler);
 
