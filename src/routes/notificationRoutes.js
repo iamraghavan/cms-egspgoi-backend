@@ -11,4 +11,8 @@ router.get('/', authenticate, notificationController.getNotifications);
 // Using authenticate for now, assuming trigger comes from Admin dashboard or background process with a valid token.
 router.post('/send', authenticate, notificationController.sendNotification);
 
+// Read Status
+router.patch('/:id/read', authenticate, notificationController.markAsRead);
+router.patch('/read-all', authenticate, notificationController.markAllAsRead);
+
 module.exports = router;
