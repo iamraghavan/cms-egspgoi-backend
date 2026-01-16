@@ -28,7 +28,7 @@ const createLeadInDB = async (leadData, isInternal = false, creatorId = null) =>
 
     if (!assigned_to) {
         // Only run auto-assignment algorithm if no specific agent is assigned
-        bestAgent = await findBestAgent();
+        bestAgent = await assignmentService.findBestAgent();
         if (bestAgent) {
             assigned_to = bestAgent.id;
             logger.info(`Auto-assigning lead to: ${bestAgent.name} (${bestAgent.id})`);
