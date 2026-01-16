@@ -22,4 +22,14 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = { globalLimiter, authLimiter };
+const submissionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // Limit each IP to 10 submissions per hour (Anti-Spam)
+  message: {
+    message: 'Too many lead submissions from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+module.exports = { globalLimiter, authLimiter, submissionLimiter };

@@ -4,9 +4,12 @@ const { createLead, getLeads, initiateCall, submitLead, addNote, getLeadNotes, t
 const { authenticate } = require('../middleware/authMiddleware');
 const { checkPermission } = require('../middleware/rbacMiddleware');
 
+const { submissionLimiter } = require('../middleware/rateLimiter');
+const { verifySubmissionSecret } = require('../middleware/apiKeyMiddleware');
+
 // Public/Secure Submission Endpoint
 // Mounted at /api/v1, so this becomes /api/v1/leads/submit
-router.post('/leads/submit', submitLead);
+router.post('/leads/submit', submissionLimiter, verifySubmissionSecret, submitLead);
 
 // Protected Routes
 router.post('/leads', authenticate, createLead);
