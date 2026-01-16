@@ -57,8 +57,8 @@ const getAdminStats = async (req, res) => {
         // 3. Filter Data by Date
         const dateFilter = (item, dateField = 'created_at') => {
             if (!item[dateField]) return false;
-            // Handle different date formats (assuming ISO or similar stored)
             const d = new Date(item[dateField]).getTime();
+            if (isNaN(d)) return false; // Safety check
             return d >= startTs && d <= endTs;
         };
 
@@ -73,12 +73,12 @@ const getAdminStats = async (req, res) => {
 
         // KPI Cards
         const kpi = {
-            total_leads: { value: totalLeads, label: 'Total Leads', change: null }, // 'change' requires comparing vs previous period (skipped for brevity)
+            total_leads: { value: totalLeads, label: 'Total Leads', change: null },
             revenue: { value: totalRevenue, label: 'Total Revenue' },
             ad_spend: { value: totalAdSpend, label: 'Ad Spend' },
             cpl: { value: totalLeads > 0 ? (totalAdSpend / totalLeads).toFixed(2) : 0, label: 'Cost Per Lead' },
             roi: { value: totalAdSpend > 0 ? ((totalRevenue - totalAdSpend) / totalAdSpend * 100).toFixed(1) : 0, label: 'ROI %' },
-            active_users: { value: users.filter(u => !u.is_deleted).length, label: 'Active Users' } // Always snapshot
+            active_users: { value: users.filter(u => !u.is_deleted).length, label: 'Active Users' }
         };
 
         // 5. Funnel (Based on current status of filtered leads)
@@ -93,15 +93,18 @@ const getAdminStats = async (req, res) => {
         // 6. Trend Charts (Daily Breakdown)
         const getDailyTrend = (items, dateField = 'created_at', valueField = null) => {
             const trend = {};
-            // Init empty range if needed? Or just items present.
-            // Let's iterate items and group by YYYY-MM-DD
             items.forEach(item => {
                 if (!item[dateField]) return;
-                const d = new Date(item[dateField]).toISOString().split('T')[0];
-                if (!trend[d]) trend[d] = 0;
-                trend[d] += valueField ? (item[valueField] || 0) : 1;
+                try {
+                    const dObj = new Date(item[dateField]);
+                    if (isNaN(dObj.getTime())) return;
+                    const d = dObj.toISOString().split('T')[0];
+                    if (!trend[d]) trend[d] = 0;
+                    trend[d] += valueField ? (item[valueField] || 0) : 1;
+                } catch (e) {
+                    // Ignore bad date
+                }
             });
-            // Convert to Array sorted by date
             return Object.keys(trend).sort().map(date => ({ date, value: trend[date] }));
         };
 
@@ -112,12 +115,10 @@ const getAdminStats = async (req, res) => {
         };
 
         // 7. Recent Activity (Global)
-        // Combining Leads, Payments, Users for a "Feed"
-        // Taking top 10 most recent from all sources within range
         const activity = [];
         filteredLeads.forEach(l => activity.push({ type: 'lead', message: `New Lead: ${l.name}`, time: l.created_at }));
         filteredPayments.forEach(p => activity.push({ type: 'payment', message: `Revenue: ₹${p.amount}`, time: p.date }));
-        // Sort DESC
+
         const recentActivity = activity.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 10);
 
         res.json({
@@ -166,6 +167,7 @@ const getAdmissionStats = async (req, res) => {
         const filteredLeads = leads.filter(l => {
             if (!l.created_at) return false;
             const d = new Date(l.created_at).getTime();
+            if (isNaN(d)) return false; // Safety Check
             return d >= startTs && d <= endTs;
         });
 
@@ -212,9 +214,15 @@ const getAdmissionStats = async (req, res) => {
             const trend = {};
             items.forEach(item => {
                 if (!item[dateField]) return;
-                const d = new Date(item[dateField]).toISOString().split('T')[0];
-                if (!trend[d]) trend[d] = 0;
-                trend[d]++;
+                try {
+                    const dObj = new Date(item[dateField]);
+                    if (isNaN(dObj.getTime())) return;
+                    const d = dObj.toISOString().split('T')[0];
+                    if (!trend[d]) trend[d] = 0;
+                    trend[d]++;
+                } catch (e) {
+                    // Ignore bad date
+                }
             });
             return Object.keys(trend).sort().map(date => ({ date, value: trend[date] }));
         };
@@ -273,6 +281,10 @@ const getFinanceStats = async (req, res) => {
 // --- ADMISSION EXECUTIVE ---
 const getExecutiveStats = async (req, res) => {
     try {
+        if (!req.user || !req.user.id) {
+            console.error("Executive Stats Error: No user ID in request.");
+            return res.status(401).json({ message: "Unauthorized: No User ID" });
+        }
         const userId = req.user.id;
         const { startDate, endDate, range } = req.query;
 
@@ -302,18 +314,21 @@ const getExecutiveStats = async (req, res) => {
             // Date Filter
             if (!l.created_at) return false;
             const d = new Date(l.created_at).getTime();
+            if (isNaN(d)) return false; // Safety Check
             return d >= startTs && d <= endTs;
         });
 
         // 3. Operational Data (Live - Ignore Date Range)
-        // "Tasks" should always show what is pending NOW, regardless of the "Analytics" filter.
         const myAllLeads = leads.filter(l => l.assigned_to === userId);
         const todayStr = now.toISOString().split('T')[0];
 
         const pendingFollowUps = myAllLeads.filter(l => {
             if (!l.next_follow_up_date) return false;
-            // Due Today OR Overdue
-            return l.next_follow_up_date.startsWith(todayStr) || l.next_follow_up_date < now.toISOString();
+            // Safe Date Check
+            const dStr = l.next_follow_up_date;
+            if (!dStr || typeof dStr !== 'string') return false;
+            // Simple check if it looks like a date or ISO string
+            return (dStr.startsWith(todayStr) || dStr < now.toISOString());
         });
 
         // 4. KPIs (Based on filtered range)
@@ -326,9 +341,15 @@ const getExecutiveStats = async (req, res) => {
             const trend = {};
             items.forEach(item => {
                 if (!item[dateField]) return;
-                const d = new Date(item[dateField]).toISOString().split('T')[0];
-                if (!trend[d]) trend[d] = 0;
-                trend[d]++;
+                try {
+                    const dObj = new Date(item[dateField]);
+                    if (isNaN(dObj.getTime())) return; // Skip invalid
+                    const d = dObj.toISOString().split('T')[0];
+                    if (!trend[d]) trend[d] = 0;
+                    trend[d]++;
+                } catch (e) {
+                    // Ignore bad dates
+                }
             });
             return Object.keys(trend).sort().map(date => ({ date, value: trend[date] }));
         };
@@ -341,15 +362,12 @@ const getExecutiveStats = async (req, res) => {
         const stats = {
             meta: { startDate: start.toISOString(), endDate: end.toISOString() },
             kpi: {
-                // Live Operational Metric
                 pending_followups: { value: pendingFollowUps.length, label: 'Pending Tasks (Live)' },
-                // Historical Metrics (Filtered)
                 total_leads: { value: totalMyLeads, label: 'My Leads (Period)' },
                 my_conversions: { value: myConversions, label: 'My Conversions (Period)' },
                 conversion_rate: { value: conversionRate, label: 'Success Rate %' }
             },
             charts,
-            // The Task List itself (for the "Workstation" view)
             tasks: pendingFollowUps.map(l => ({
                 id: l.id,
                 name: l.name,
@@ -357,7 +375,7 @@ const getExecutiveStats = async (req, res) => {
                 time: l.next_follow_up_date,
                 isOverdue: l.next_follow_up_date < now.toISOString()
             })),
-            performance: { // Legacy structure support
+            performance: {
                 conversionRate,
                 target: 10
             }
@@ -366,7 +384,7 @@ const getExecutiveStats = async (req, res) => {
         res.json(stats);
     } catch (error) {
         console.error("Executive Stats Error:", error);
-        res.status(500).json({ message: "Failed to fetch executive stats" });
+        res.status(500).json({ message: "Failed to fetch executive stats", error: error.toString() });
     }
 };
 
