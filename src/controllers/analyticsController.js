@@ -280,13 +280,16 @@ const getFinanceStats = async (req, res) => {
 
 // --- ADMISSION EXECUTIVE ---
 const getExecutiveStats = async (req, res) => {
+    console.log("DEBUG: Executive Stats Request Started");
     try {
         if (!req.user || !req.user.id) {
             console.error("Executive Stats Error: No user ID in request.");
             return res.status(401).json({ message: "Unauthorized: No User ID" });
         }
         const userId = req.user.id;
+        console.log("DEBUG: User ID:", userId);
         const { startDate, endDate, range } = req.query;
+        console.log("DEBUG: Query Params:", req.query);
 
         // 1. Calculate Date Range (For Historical Analytics)
         const now = new Date();
@@ -305,8 +308,10 @@ const getExecutiveStats = async (req, res) => {
 
         const startTs = start.getTime();
         const endTs = end.getTime();
+        console.log("DEBUG: Date Range Calculated", { startTs, endTs });
 
         const leads = await scanAll(LEADS_TABLE);
+        console.log("DEBUG: Leads Scanned. Count:", leads ? leads.length : "null");
 
         // 2. Filter: Assigned to ME + Created within Date Range
         const myLeadsHistory = leads.filter(l => {
@@ -317,6 +322,7 @@ const getExecutiveStats = async (req, res) => {
             if (isNaN(d)) return false; // Safety Check
             return d >= startTs && d <= endTs;
         });
+        console.log("DEBUG: Leads History Count:", myLeadsHistory.length);
 
         // 3. Operational Data (Live - Ignore Date Range)
         const myAllLeads = leads.filter(l => l.assigned_to === userId);
@@ -330,6 +336,7 @@ const getExecutiveStats = async (req, res) => {
             // Simple check if it looks like a date or ISO string
             return (dStr.startsWith(todayStr) || dStr < now.toISOString());
         });
+        console.log("DEBUG: Pending Followups Count:", pendingFollowUps.length);
 
         // 4. KPIs (Based on filtered range)
         const totalMyLeads = myLeadsHistory.length;
@@ -338,7 +345,9 @@ const getExecutiveStats = async (req, res) => {
 
         // 5. Trend Charts
         const getDailyTrend = (items, dateField = 'created_at') => {
+            console.log("DEBUG: Entering getDailyTrend", items ? items.length : "null");
             const trend = {};
+            if (!items) return []; // Safety
             items.forEach(item => {
                 if (!item[dateField]) return;
                 try {
@@ -351,6 +360,7 @@ const getExecutiveStats = async (req, res) => {
                     // Ignore bad dates
                 }
             });
+            console.log("DEBUG: Trend calculated");
             return Object.keys(trend).sort().map(date => ({ date, value: trend[date] }));
         };
 
@@ -358,6 +368,7 @@ const getExecutiveStats = async (req, res) => {
             daily_leads: getDailyTrend(myLeadsHistory),
             daily_conversions: getDailyTrend(myLeadsHistory.filter(l => ['Enrolled', 'Converted', 'enrolled', 'converted'].includes(l.status)))
         };
+        console.log("DEBUG: Charts Generated");
 
         const stats = {
             meta: { startDate: start.toISOString(), endDate: end.toISOString() },
@@ -381,9 +392,11 @@ const getExecutiveStats = async (req, res) => {
             }
         };
 
+        console.log("DEBUG: Sending Response");
         res.json(stats);
     } catch (error) {
-        console.error("Executive Stats Error:", error);
+        console.error("Executive Stats Error Stack:", error.stack);
+        console.error("Executive Stats Error toString:", error.toString());
         res.status(500).json({ message: "Failed to fetch executive stats", error: error.toString() });
     }
 };
