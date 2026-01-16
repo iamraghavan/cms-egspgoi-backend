@@ -24,6 +24,28 @@ const scanAll = async (TableName) => {
 // --- SUPER ADMIN ---
 const getAdminStats = async (req, res) => {
     try {
+        const { startDate, endDate, range } = req.query;
+
+        // 1. Calculate Date Range
+        const now = new Date();
+        let start = new Date(0); // Default: All Time
+        let end = new Date();
+
+        if (startDate && endDate) {
+            start = new Date(startDate);
+            end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+        } else if (range) {
+            const days = parseInt(range) || 30;
+            start = new Date();
+            start.setDate(now.getDate() - days);
+        }
+
+        const startTs = start.getTime();
+        const endTs = end.getTime();
+
+        // 2. Fetch Data (Scanning needed for filtering by non-key dates)
+        // Optimization: In prod, use Query with Index on 'created_at'.
         const [users, leads, campaigns, payments, adSpends] = await Promise.all([
             scanAll(USERS_TABLE),
             scanAll(LEADS_TABLE),
@@ -32,37 +54,80 @@ const getAdminStats = async (req, res) => {
             scanAll(AD_SPENDS_TABLE)
         ]);
 
-        const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
-        const totalAdSpend = adSpends.reduce((sum, s) => sum + s.actual_spend, 0);
+        // 3. Filter Data by Date
+        const dateFilter = (item, dateField = 'created_at') => {
+            if (!item[dateField]) return false;
+            // Handle different date formats (assuming ISO or similar stored)
+            const d = new Date(item[dateField]).getTime();
+            return d >= startTs && d <= endTs;
+        };
 
-        // Funnel Logic
+        const filteredLeads = leads.filter(l => dateFilter(l));
+        const filteredPayments = payments.filter(p => dateFilter(p, 'date')); // Assuming 'date' field
+        const filteredAdSpends = adSpends.filter(s => dateFilter(s, 'date')); // Assuming 'date' field
+
+        // 4. Calculate KPIs
+        const totalRevenue = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const totalAdSpend = filteredAdSpends.reduce((sum, s) => sum + (s.actual_spend || 0), 0);
+        const totalLeads = filteredLeads.length;
+
+        // KPI Cards
+        const kpi = {
+            total_leads: { value: totalLeads, label: 'Total Leads', change: null }, // 'change' requires comparing vs previous period (skipped for brevity)
+            revenue: { value: totalRevenue, label: 'Total Revenue' },
+            ad_spend: { value: totalAdSpend, label: 'Ad Spend' },
+            cpl: { value: totalLeads > 0 ? (totalAdSpend / totalLeads).toFixed(2) : 0, label: 'Cost Per Lead' },
+            roi: { value: totalAdSpend > 0 ? ((totalRevenue - totalAdSpend) / totalAdSpend * 100).toFixed(1) : 0, label: 'ROI %' },
+            active_users: { value: users.filter(u => !u.is_deleted).length, label: 'Active Users' } // Always snapshot
+        };
+
+        // 5. Funnel (Based on current status of filtered leads)
         const funnel = {
-            'New': leads.filter(l => l.status === 'new').length,
-            'Contacted': leads.filter(l => l.status === 'contacted' || l.status === 'called').length,
-            'Interested': leads.filter(l => l.status === 'interested' || l.status === 'visited').length,
-            'Enrolled': leads.filter(l => l.status === 'enrolled' || l.status === 'converted').length
+            'New': filteredLeads.filter(l => l.status === 'new').length,
+            'Contacted': filteredLeads.filter(l => ['contacted', 'called', 'follow_up'].includes(l.status)).length,
+            'Interested': filteredLeads.filter(l => ['interested', 'visited'].includes(l.status)).length,
+            'Enrolled': filteredLeads.filter(l => ['enrolled', 'converted'].includes(l.status)).length,
+            'Lost': filteredLeads.filter(l => ['lost', 'dropped'].includes(l.status)).length
         };
 
-        const stats = {
-            overview: {
-                totalLeads: leads.length,
-                totalUsers: users.length, // Consider filtering active only
-                revenue: totalRevenue,
-                adSpend: totalAdSpend,
-                activeCampaigns: campaigns.filter(c => c.status === 'active').length
-            },
+        // 6. Trend Charts (Daily Breakdown)
+        const getDailyTrend = (items, dateField = 'created_at', valueField = null) => {
+            const trend = {};
+            // Init empty range if needed? Or just items present.
+            // Let's iterate items and group by YYYY-MM-DD
+            items.forEach(item => {
+                if (!item[dateField]) return;
+                const d = new Date(item[dateField]).toISOString().split('T')[0];
+                if (!trend[d]) trend[d] = 0;
+                trend[d] += valueField ? (item[valueField] || 0) : 1;
+            });
+            // Convert to Array sorted by date
+            return Object.keys(trend).sort().map(date => ({ date, value: trend[date] }));
+        };
+
+        const charts = {
+            leads_trend: getDailyTrend(filteredLeads),
+            revenue_trend: getDailyTrend(filteredPayments, 'date', 'amount'),
+            spend_trend: getDailyTrend(filteredAdSpends, 'date', 'actual_spend')
+        };
+
+        // 7. Recent Activity (Global)
+        // Combining Leads, Payments, Users for a "Feed"
+        // Taking top 10 most recent from all sources within range
+        const activity = [];
+        filteredLeads.forEach(l => activity.push({ type: 'lead', message: `New Lead: ${l.name}`, time: l.created_at }));
+        filteredPayments.forEach(p => activity.push({ type: 'payment', message: `Revenue: ₹${p.amount}`, time: p.date }));
+        // Sort DESC
+        const recentActivity = activity.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 10);
+
+        res.json({
+            meta: { startDate: start.toISOString(), endDate: end.toISOString() },
+            kpi,
             funnel,
-            recentActivity: leads.slice(0, 5).map(l => ({ // Mock activity from latest leads
-                message: `New Lead: ${l.name}`,
-                time: l.created_at
-            })),
-            metrics: {
-                conversionRate: leads.length > 0 ? ((funnel.Enrolled / leads.length) * 100).toFixed(1) : 0,
-                roi: totalAdSpend > 0 ? ((totalRevenue - totalAdSpend) / totalAdSpend * 100).toFixed(1) : 0
-            }
-        };
+            charts,
+            recentActivity
+        });
 
-        res.json(stats);
     } catch (error) {
         console.error("Admin Stats Error:", error);
         res.status(500).json({ message: "Failed to fetch admin stats" });
