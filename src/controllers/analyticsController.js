@@ -274,27 +274,82 @@ const getFinanceStats = async (req, res) => {
 const getExecutiveStats = async (req, res) => {
     try {
         const userId = req.user.id;
-        const leads = await scanAll(LEADS_TABLE);
-        const myLeads = leads.filter(l => l.assigned_to === userId);
+        const { startDate, endDate, range } = req.query;
 
+        // 1. Calculate Date Range (For Historical Analytics)
         const now = new Date();
-        const todayStr = now.toISOString().split('T')[0]; // "YYYY-MM-DD"
-        // Adjust for IST/Timezone if needed, but simple string compare usually works if consistent
+        let start = new Date(0);
+        let end = new Date();
 
-        // Tasks Logic
-        const pendingFollowUps = myLeads.filter(l => {
+        if (startDate && endDate) {
+            start = new Date(startDate);
+            end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+        } else if (range) {
+            const days = parseInt(range) || 30;
+            start = new Date();
+            start.setDate(now.getDate() - days);
+        }
+
+        const startTs = start.getTime();
+        const endTs = end.getTime();
+
+        const leads = await scanAll(LEADS_TABLE);
+
+        // 2. Filter: Assigned to ME + Created within Date Range
+        const myLeadsHistory = leads.filter(l => {
+            if (l.assigned_to !== userId) return false;
+            // Date Filter
+            if (!l.created_at) return false;
+            const d = new Date(l.created_at).getTime();
+            return d >= startTs && d <= endTs;
+        });
+
+        // 3. Operational Data (Live - Ignore Date Range)
+        // "Tasks" should always show what is pending NOW, regardless of the "Analytics" filter.
+        const myAllLeads = leads.filter(l => l.assigned_to === userId);
+        const todayStr = now.toISOString().split('T')[0];
+
+        const pendingFollowUps = myAllLeads.filter(l => {
             if (!l.next_follow_up_date) return false;
-            // Check if date part matches, or if it's in the past (Overdue)
-            // Assuming next_follow_up_date is ISO string
+            // Due Today OR Overdue
             return l.next_follow_up_date.startsWith(todayStr) || l.next_follow_up_date < now.toISOString();
         });
 
-        const myConversions = myLeads.filter(l => l.status === 'Enrolled' || l.status === 'Converted').length;
+        // 4. KPIs (Based on filtered range)
+        const totalMyLeads = myLeadsHistory.length;
+        const myConversions = myLeadsHistory.filter(l => ['Enrolled', 'Converted', 'enrolled', 'converted'].includes(l.status)).length;
+        const conversionRate = totalMyLeads > 0 ? ((myConversions / totalMyLeads) * 100).toFixed(1) : 0;
+
+        // 5. Trend Charts
+        const getDailyTrend = (items, dateField = 'created_at') => {
+            const trend = {};
+            items.forEach(item => {
+                if (!item[dateField]) return;
+                const d = new Date(item[dateField]).toISOString().split('T')[0];
+                if (!trend[d]) trend[d] = 0;
+                trend[d]++;
+            });
+            return Object.keys(trend).sort().map(date => ({ date, value: trend[date] }));
+        };
+
+        const charts = {
+            daily_leads: getDailyTrend(myLeadsHistory),
+            daily_conversions: getDailyTrend(myLeadsHistory.filter(l => ['Enrolled', 'Converted', 'enrolled', 'converted'].includes(l.status)))
+        };
 
         const stats = {
-            myTotalLeads: myLeads.length,
-            todayTasks: pendingFollowUps.length, // Number of items in "Today's Work"
-            myConversions,
+            meta: { startDate: start.toISOString(), endDate: end.toISOString() },
+            kpi: {
+                // Live Operational Metric
+                pending_followups: { value: pendingFollowUps.length, label: 'Pending Tasks (Live)' },
+                // Historical Metrics (Filtered)
+                total_leads: { value: totalMyLeads, label: 'My Leads (Period)' },
+                my_conversions: { value: myConversions, label: 'My Conversions (Period)' },
+                conversion_rate: { value: conversionRate, label: 'Success Rate %' }
+            },
+            charts,
+            // The Task List itself (for the "Workstation" view)
             tasks: pendingFollowUps.map(l => ({
                 id: l.id,
                 name: l.name,
@@ -302,9 +357,9 @@ const getExecutiveStats = async (req, res) => {
                 time: l.next_follow_up_date,
                 isOverdue: l.next_follow_up_date < now.toISOString()
             })),
-            performance: {
-                conversionRate: myLeads.length > 0 ? ((myConversions / myLeads.length) * 100).toFixed(1) : 0,
-                target: 10 // Hardcoded monthly target for now
+            performance: { // Legacy structure support
+                conversionRate,
+                target: 10
             }
         };
 
