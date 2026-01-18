@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const upload = multer(); // Memory storage by default
 
-const { authenticate, roleMiddleware } = require('../middleware/authMiddleware');
+const { authenticate: authMiddleware, roleMiddleware } = require('../middleware/authMiddleware');
 const cmsAdmin = require('../controllers/cmsAdminController');
 const cmsPublic = require('../controllers/cmsPublicController');
 
