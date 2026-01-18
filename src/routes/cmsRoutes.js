@@ -12,6 +12,7 @@ const cmsPublic = require('../controllers/cmsPublicController');
 router.post('/admin/sites', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.createSite);
 router.get('/admin/sites', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.getSites);
 router.put('/admin/sites/:id', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.updateSite);
+router.post('/admin/sites/:id/verify', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.verifySiteDNS);
 router.delete('/admin/sites/:id', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.deleteSite);
 
 // Categories

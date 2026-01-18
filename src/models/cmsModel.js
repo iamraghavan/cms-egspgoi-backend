@@ -28,6 +28,12 @@ const siteSchema = Joi.object({
         refresh_time_min: Joi.number().default(10)
     }).default({}),
     rss_feed: Joi.boolean().default(true),
+    verification: Joi.object({
+        token: Joi.string().allow(''),
+        status: Joi.string().valid('pending', 'verified', 'failed').default('pending'),
+        method: Joi.string().valid('dns_txt', 'cname').default('dns_txt'),
+        verified_at: Joi.string().allow(null)
+    }).default({}),
     scripts: Joi.object({
         google_analytics: Joi.string().allow(''),
         gtm_id: Joi.string().allow(''),

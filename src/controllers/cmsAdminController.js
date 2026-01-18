@@ -7,6 +7,7 @@ const {
 } = require('../models/cmsModel');
 const { uploadToGitHub } = require('../utils/githubUtils');
 const Joi = require('joi');
+const dns = require('dns').promises; // Native Node.js DNS module
 
 // --- Helper: Scan by Site ID ---
 const scanBySite = async (TableName, siteId) => {
@@ -34,7 +35,22 @@ const scanBySite = async (TableName, siteId) => {
 
 const createSite = async (req, res) => {
     try {
-        const { error, value } = siteSchema.validate({ ...req.body, id: uuidv4(), created_at: new Date().toISOString() });
+        const id = uuidv4();
+        // Generate Token
+        const verificationToken = `egsp-ver-${uuidv4().split('-')[0]}-${Date.now()}`;
+
+        const data = {
+            ...req.body,
+            id,
+            created_at: new Date().toISOString(),
+            verification: {
+                token: verificationToken,
+                status: 'pending',
+                method: 'dns_txt'
+            }
+        };
+
+        const { error, value } = siteSchema.validate(data);
         if (error) return res.status(400).json({ error: error.details[0].message });
 
         await docClient.send(new PutCommand({ TableName: CMS_SITES_TABLE, Item: value }));
@@ -61,13 +77,73 @@ const updateSite = async (req, res) => {
         if (!existing.Item) return res.status(404).json({ message: "Site not found" });
 
         const updated = { ...existing.Item, ...req.body, updated_at: new Date().toISOString() };
-        // Validate only fields present in schema (shallow) or full object
-        // Simple merge valid? Yes, but let's re-validate.
+
+        // If domain changed, reset verification
+        if (req.body.domain && req.body.domain !== existing.Item.domain) {
+            updated.verification = {
+                token: `egsp-ver-${uuidv4().split('-')[0]}-${Date.now()}`,
+                status: 'pending',
+                method: 'dns_txt'
+            };
+        }
+
         const { error, value } = siteSchema.validate(updated);
         if (error) return res.status(400).json({ error: error.details[0].message });
 
         await docClient.send(new PutCommand({ TableName: CMS_SITES_TABLE, Item: value }));
         res.json(value);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const verifySiteDNS = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await docClient.send(new GetCommand({ TableName: CMS_SITES_TABLE, Key: { id } }));
+        if (!result.Item) return res.status(404).json({ message: "Site not found" });
+        const site = result.Item;
+
+        if (!site.verification || !site.verification.token) {
+            return res.status(400).json({ message: "No verification token found for this site" });
+        }
+
+        const domain = site.domain;
+        const expectedToken = site.verification.token;
+        console.log(`Verifying DNS for ${domain}. Expecting TXT: ${expectedToken}`);
+
+        let txtRecords = [];
+        try {
+            txtRecords = await dns.resolveTxt(domain);
+            // txtRecords is array of arrays: [ ['value1'], ['value2'] ]
+        } catch (dnsErr) {
+            console.error("DNS Error:", dnsErr);
+            return res.status(400).json({
+                message: "DNS Lookup failed",
+                error: dnsErr.code,
+                instruction: `Please add a TXT record to ${domain} with value: ${expectedToken}`
+            });
+        }
+
+        // Check if ANY record matches token
+        // Flatten the array of arrays
+        const flatRecords = txtRecords.flat();
+        const isVerified = flatRecords.includes(expectedToken);
+
+        if (isVerified) {
+            site.verification.status = 'verified';
+            site.verification.verified_at = new Date().toISOString();
+
+            await docClient.send(new PutCommand({ TableName: CMS_SITES_TABLE, Item: site }));
+            return res.json({ message: "Site verified successfully!", status: "verified" });
+        } else {
+            return res.status(400).json({
+                message: "Verification failed. Token not found in DNS records.",
+                found_records: flatRecords,
+                instruction: `Please add a TXT record to ${domain} with value: ${expectedToken}`
+            });
+        }
+
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

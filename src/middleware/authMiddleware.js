@@ -20,7 +20,15 @@ const authenticate = (req, res, next) => {
 
 const roleMiddleware = (role) => {
   return (req, res, next) => {
-    if (!req.user || (req.user.role !== role && req.user.role !== 'super_admin')) {
+    if (!req.user || !req.user.role) {
+      return res.status(403).json({ message: 'Access denied: No role found' });
+    }
+
+    // Normalize user role: "Super Admin" -> "super_admin"
+    const userRole = req.user.role.toLowerCase().replace(/\s+/g, '_');
+    const requiredRole = role.toLowerCase();
+
+    if (userRole !== requiredRole && userRole !== 'super_admin') {
       return res.status(403).json({ message: 'Access denied: Insufficient privileges' });
     }
     next();
