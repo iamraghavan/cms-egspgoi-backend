@@ -18,4 +18,13 @@ const authenticate = (req, res, next) => {
   }
 };
 
-module.exports = { authenticate };
+const roleMiddleware = (role) => {
+  return (req, res, next) => {
+    if (!req.user || (req.user.role !== role && req.user.role !== 'super_admin')) {
+      return res.status(403).json({ message: 'Access denied: Insufficient privileges' });
+    }
+    next();
+  };
+};
+
+module.exports = { authenticate, roleMiddleware };
