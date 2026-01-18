@@ -74,6 +74,8 @@ app.use('/api/v1/leads/bulk', require('./src/routes/bulkLeadRoutes'));
 app.use('/api/v1/smartflo', require('./src/routes/smartfloApiRoutes'));
 app.use('/api/v1/smartflo-api', require('./src/routes/smartfloApiRoutes'));
 app.use('/api/v1/notifications', require('./src/routes/notificationRoutes'));
+app.use('/api/v1/cms', require('./src/routes/cmsRoutes'));
+
 
 
 

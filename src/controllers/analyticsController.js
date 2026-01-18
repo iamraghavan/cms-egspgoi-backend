@@ -397,7 +397,13 @@ const getExecutiveStats = async (req, res) => {
     } catch (error) {
         console.error("Executive Stats Error Stack:", error.stack);
         console.error("Executive Stats Error toString:", error.toString());
-        res.status(500).json({ message: "Failed to fetch executive stats", error: error.toString() });
+        // Return Stack Trace to User for Debugging
+        res.status(500).json({
+            message: "Failed to fetch executive stats",
+            error: error.message,
+            type: error.name,
+            stack: error.stack
+        });
     }
 };
 
