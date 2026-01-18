@@ -457,7 +457,7 @@ const deleteAd = async (req, res) => {
 };
 
 module.exports = {
-    createSite, getSites, updateSite, deleteSite,
+    createSite, getSites, updateSite, deleteSite, verifySiteDNS,
     createCategory, getCategories, updateCategory, deleteCategory,
     createPage, getPages, getPageById, updatePage, deletePage,
     createPost, getPosts, getPostById, updatePost, deletePost,
