@@ -89,6 +89,7 @@ const pageSchema = Joi.object({
         og_image: Joi.string().uri().allow(''),
         noindex: Joi.boolean().default(false)
     }).default({}),
+    main_image: Joi.string().uri().allow(null, ''), // Hero Image / Thumbnail
     status: Joi.string().valid('published', 'draft').default('draft'),
     created_at: Joi.string(),
     updated_at: Joi.string()
