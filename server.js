@@ -1,3 +1,4 @@
+const os = require('os');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -60,13 +61,24 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Admissions CRM API' });
 });
 
-// Health Check Endpoint (Fail-Safe Monitoting)
+// Health Check Endpoint (Fail-Safe Monitoring)
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'success',
     message: 'Server is healthy',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    server_details: {
+      hostname: os.hostname(),
+      platform: os.platform(),
+      release: os.release(),
+      type: os.type(),
+      arch: os.arch(),
+      total_mem_mb: (os.totalmem() / 1024 / 1024).toFixed(2),
+      free_mem_mb: (os.freemem() / 1024 / 1024).toFixed(2),
+      load_avg: os.loadavg()
+    },
+    network: os.networkInterfaces() // Exposes IP addresses
   });
 });
 
