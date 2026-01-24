@@ -10,6 +10,12 @@ const {
 const { authenticate } = require('../middleware/authMiddleware');
 const { checkPermission } = require('../middleware/rbacMiddleware');
 
+// DuckDB High-Performance Analytics (PoC)
+const { getDuckStats, getCacheStats } = require('../controllers/analyticsController');
+
+// SQLite Cache Test (PoC) - Public Exception
+router.get('/cache-test', getCacheStats);
+
 router.use(authenticate);
 
 // Super Admin
@@ -28,11 +34,7 @@ router.get('/finance', checkPermission('budgets_approve'), getFinanceStats);
 // We need a permission that executives have. 'leads_call' is a good proxy.
 router.get('/executive', checkPermission('leads_call'), getExecutiveStats);
 
-// DuckDB High-Performance Analytics (PoC)
-const { getDuckStats, getCacheStats } = require('../controllers/analyticsController');
+// DuckDB High-Performance Analytics (PoC) - Protected
 router.get('/duck', checkPermission('all'), getDuckStats);
-
-// SQLite Cache Test (PoC)
-router.get('/cache-test', checkPermission('all'), getCacheStats);
 
 module.exports = router;
