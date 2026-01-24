@@ -11,9 +11,13 @@ const { getISTTimestamp, parseISTTimestamp } = require('../utils/timeUtils');
 // Helper to scan all items
 const scanAll = async (TableName) => {
     let items = [];
-    let lastEvaluatedKey = null;
+    let lastEvaluatedKey = undefined; // Must be undefined for first call, NOT null
     do {
-        const command = new ScanCommand({ TableName, ExclusiveStartKey: lastEvaluatedKey });
+        const params = { TableName };
+        if (lastEvaluatedKey) {
+            params.ExclusiveStartKey = lastEvaluatedKey;
+        }
+        const command = new ScanCommand(params);
         const result = await docClient.send(command);
         items = items.concat(result.Items || []);
         lastEvaluatedKey = result.LastEvaluatedKey;
