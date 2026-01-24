@@ -19,6 +19,9 @@ router.patch('/campaigns/:id/status', authenticate, checkPermission('campaigns')
 
 // Budgets
 router.post('/budgets', authenticate, checkPermission('budgets'), createBudget);
+router.get('/budgets', authenticate, checkPermission('budgets'), require('../controllers/budgetController').getBudgets);
+router.get('/budgets/:id', authenticate, checkPermission('budgets'), require('../controllers/budgetController').getBudgetById);
+router.put('/budgets/:id', authenticate, checkPermission('budgets'), require('../controllers/budgetController').updateBudget);
 router.patch('/budgets/:id/approve', authenticate, checkPermission('budgets_approve'), approveBudget);
 router.delete('/budgets/:id', authenticate, checkPermission('budgets_delete'), deleteBudget);
 
