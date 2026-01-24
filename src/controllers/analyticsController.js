@@ -50,48 +50,50 @@ const getAdminStats = asyncHandler(async (req, res) => {
     const endTs = end.getTime();
 
     // 2. Fetch Data (Scanning needed for filtering by non-key dates)
-    // Optimization: In prod, use Query with Index on 'created_at'.
-    const [users, leads, campaigns, payments, adSpends] = await Promise.all([
+    const [users, leads, campaigns, payments, adSpends, posts] = await Promise.all([
         scanAll(USERS_TABLE),
         scanAll(LEADS_TABLE),
         scanAll(CAMPAIGNS_TABLE),
         scanAll(PAYMENT_RECORDS_TABLE),
-        scanAll(AD_SPENDS_TABLE)
+        scanAll(AD_SPENDS_TABLE),
+        scanAll(CMS_POSTS_TABLE)
     ]);
 
     // 3. Filter Data by Date
+    // Helper to get Date object regardless of format (ISO vs DD/MM/YYYY - HH:MM:SS)
+    const getItemDate = (item, dateField) => {
+        if (!item[dateField]) return null;
+        // Try parsing assuming custom IST format first if applicable, or rely on internal logic
+        // But parseISTTimestamp handles ISO fallback too.
+        return parseISTTimestamp(item[dateField]);
+    };
+
     const dateFilter = (item, dateField = 'created_at') => {
-        if (!item[dateField]) return false;
-        const d = new Date(item[dateField]).getTime();
-        // console.log(`Debug Date Filter: Field=${dateField}, Value=${item[dateField]}, Parsed=${d}, Start=${startTs}, End=${endTs}`);
-        if (isNaN(d)) return false; // Safety check
+        const dObj = getItemDate(item, dateField);
+        if (!dObj) return false;
+        const d = dObj.getTime();
         return d >= startTs && d <= endTs;
     };
 
-    console.log("DEBUG ANALYTICS:");
-    console.log("StartTS:", startTs, "EndTS:", endTs);
-    console.log("Leads Count Raw:", leads.length);
-    if (leads.length > 0) console.log("First Lead Sample:", JSON.stringify(leads[0]));
-
     const filteredLeads = leads.filter(l => dateFilter(l));
-    console.log("Filtered Leads Count:", filteredLeads.length);
-
-    const filteredPayments = payments.filter(p => dateFilter(p, 'date')); // Assuming 'date' field
-    const filteredAdSpends = adSpends.filter(s => dateFilter(s, 'date')); // Assuming 'date' field
+    const filteredPayments = payments.filter(p => dateFilter(p, 'date'));
+    const filteredAdSpends = adSpends.filter(s => dateFilter(s, 'date'));
+    const filteredPosts = posts.filter(p => dateFilter(p));
 
     // 4. Calculate KPIs
     const totalRevenue = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
     const totalAdSpend = filteredAdSpends.reduce((sum, s) => sum + (s.actual_spend || 0), 0);
     const totalLeads = filteredLeads.length;
+    const totalActiveLeads = filteredLeads.filter(l => !['Lost', 'Dropped', 'lost', 'dropped'].includes(l.status)).length;
 
     // KPI Cards
     const kpi = {
-        total_leads: { value: totalLeads, label: 'Total Leads', change: null },
-        revenue: { value: totalRevenue, label: 'Total Revenue' },
+        total_leads: { value: totalLeads, label: 'Total Leads' },
         ad_spend: { value: totalAdSpend, label: 'Ad Spend' },
-        cpl: { value: totalLeads > 0 ? (totalAdSpend / totalLeads).toFixed(2) : 0, label: 'Cost Per Lead' },
-        roi: { value: totalAdSpend > 0 ? ((totalRevenue - totalAdSpend) / totalAdSpend * 100).toFixed(1) : 0, label: 'ROI %' },
-        active_users: { value: users.filter(u => !u.is_deleted).length, label: 'Active Users' }
+        active_users: { value: users.filter(u => !u.is_deleted).length, label: 'Active Users' },
+        total_posts: { value: filteredPosts.length, label: 'Total Posts' },
+        active_leads: { value: totalActiveLeads, label: 'Active Leads' },
+        revenue: { value: totalRevenue, label: 'Total Revenue' }
     };
 
     // 5. Funnel (Based on current status of filtered leads)
@@ -107,16 +109,11 @@ const getAdminStats = asyncHandler(async (req, res) => {
     const getDailyTrend = (items, dateField = 'created_at', valueField = null) => {
         const trend = {};
         items.forEach(item => {
-            if (!item[dateField]) return;
-            try {
-                const dObj = new Date(item[dateField]);
-                if (isNaN(dObj.getTime())) return;
-                const d = dObj.toISOString().split('T')[0];
-                if (!trend[d]) trend[d] = 0;
-                trend[d] += valueField ? (item[valueField] || 0) : 1;
-            } catch (e) {
-                // Ignore bad date
-            }
+            const dObj = getItemDate(item, dateField);
+            if (!dObj) return;
+            const d = dObj.toISOString().split('T')[0]; // YYYY-MM-DD
+            if (!trend[d]) trend[d] = 0;
+            trend[d] += valueField ? (item[valueField] || 0) : 1;
         });
         return Object.keys(trend).sort().map(date => ({ date, value: trend[date] }));
     };
@@ -132,24 +129,19 @@ const getAdminStats = asyncHandler(async (req, res) => {
     filteredLeads.forEach(l => activity.push({ type: 'lead', message: `New Lead: ${l.name}`, time: l.created_at }));
     filteredPayments.forEach(p => activity.push({ type: 'payment', message: `Revenue: ₹${p.amount}`, time: p.date }));
 
-    const recentActivity = activity.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 10);
+    // Sort using custom parser for time field
+    const recentActivity = activity.sort((a, b) => {
+        const timeA = parseISTTimestamp(a.time).getTime();
+        const timeB = parseISTTimestamp(b.time).getTime();
+        return timeB - timeA;
+    }).slice(0, 10);
 
     res.json({
         meta: { startDate: start.toISOString(), endDate: end.toISOString() },
         kpi,
         funnel,
         charts,
-        recentActivity,
-        debug: {
-            leads_scanned: leads.length,
-            leads_sample: leads.length > 0 ? leads[0] : null,
-            users_scanned: users.length,
-            payments_scanned: payments.length,
-            adSpends_scanned: adSpends.length,
-            start_ts: startTs,
-            end_ts: endTs,
-            server_time: new Date().toISOString()
-        }
+        recentActivity
     });
 });
 
