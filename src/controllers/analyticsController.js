@@ -3,6 +3,7 @@ const { ScanCommand } = require("@aws-sdk/lib-dynamodb");
 const { TABLE_NAME: USERS_TABLE } = require('../models/userModel');
 const { TABLE_NAME: LEADS_TABLE } = require('../models/leadModel');
 const { TABLE_NAME: CAMPAIGNS_TABLE } = require('../models/campaignModel');
+const { CMS_POSTS_TABLE } = require('../models/cmsModel');
 const { BUDGET_TABLE_NAME } = require('../models/budgetModel');
 const { TABLE_NAME: AD_SPENDS_TABLE } = require('../models/adSpendModel');
 const { TABLE_NAME: PAYMENT_RECORDS_TABLE } = require('../models/paymentRecordModel');
