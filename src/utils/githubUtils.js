@@ -66,14 +66,17 @@ const uploadToGitHub = async (fileBuffer, fileName, mimeType) => {
             throw new Error(`GitHub Upload Failed: ${data.message}`);
         }
 
-        // 4. Construct Public URL (Using jsDelivr for CDN speed or raw.githubusercontent)
+        // 4. Construct Public URL (Using jsDelivr for CDN speed)
         // Raw: https://raw.githubusercontent.com/OWNER/REPO/BRANCH/PATH
         // JsDelivr: https://cdn.jsdelivr.net/gh/OWNER/REPO@BRANCH/PATH
 
-        // Let's use raw.githubusercontent for now as it updates faster.
-        const rawUrl = `https://raw.githubusercontent.com/${ASSET_GH_OWNER}/${ASSET_GH_REPO}/${ASSET_GH_BRANCH || 'main'}/${path}`;
+        const branch = ASSET_GH_BRANCH || 'main';
+        const cdnUrl = `https://cdn.jsdelivr.net/gh/${ASSET_GH_OWNER}/${ASSET_GH_REPO}@${branch}/${path}`;
 
-        return rawUrl;
+        // Fallback or Log raw for debugging if needed, but return CDN
+        console.log(`Uploaded Asset. CDN: ${cdnUrl}`);
+
+        return cdnUrl;
 
     } catch (error) {
         console.error("GitHub Upload Error:", error);

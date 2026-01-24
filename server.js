@@ -60,6 +60,16 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Admissions CRM API' });
 });
 
+// Health Check Endpoint (Fail-Safe Monitoting)
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'Server is healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 app.use('/api/v1/auth', authLimiter, require('./src/routes/userRoutes'));
 app.use('/api/v1/users', require('./src/routes/userRoutes'));
 app.use('/api/v1', require('./src/routes/campaignRoutes'));

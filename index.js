@@ -14,8 +14,14 @@ const { ListTablesCommand } = require("@aws-sdk/client-dynamodb");
 
 const PORT = process.env.PORT || 3000;
 
-// Initialize Socket.io - REMOVED for Pusher
-// initSocket(server);
+// Handle Uncaught Exceptions (Synchronous)
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION! Shutting down...');
+  console.error(err.name, err.message, err.stack);
+  process.exit(1);
+});
+
+let server;
 
 const startServer = async () => {
   try {
@@ -24,7 +30,7 @@ const startServer = async () => {
     await client.send(new ListTablesCommand({}));
     console.log("Connected to DynamoDB");
 
-    server.listen(PORT, () => {
+    server = app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
   } catch (error) {
@@ -34,3 +40,34 @@ const startServer = async () => {
 };
 
 startServer();
+
+// Handle Unhandled Rejections (Asynchronous)
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION! 💥 Shutting down...');
+  console.error(err.name, err.message);
+  if (server) {
+    server.close(() => {
+      process.exit(1);
+    });
+  } else {
+    process.exit(1);
+  }
+});
+
+// Graceful Shutdown (SIGTERM / SIGINT)
+const gracefulShutdown = () => {
+  console.log('SIGTERM/SIGINT received. Shutting down gracefully...');
+  if (server) {
+    server.close(() => {
+      console.log('Process terminated.');
+      // Close DB connections if necessary (AWS SDK v3 uses HTTP, usually fine, but if pooling, can destroy)
+      // client.destroy(); 
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+};
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);

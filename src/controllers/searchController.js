@@ -82,7 +82,9 @@ const searchTable = async (TableName, query, fields) => {
     }
 };
 
-const globalSearch = async (req, res) => {
+const asyncHandler = require('../utils/asyncHandler');
+
+const globalSearch = asyncHandler(async (req, res) => {
     const { q } = req.query;
     const userRole = req.user.role;
 
@@ -90,38 +92,33 @@ const globalSearch = async (req, res) => {
         return res.status(400).json({ message: "Search query must be at least 3 characters long" });
     }
 
-    try {
-        const searchPromises = [];
-        const results = {};
+    const searchPromises = [];
+    const results = {};
 
-        // 1. Leads Search (Admission Team & Admin)
-        if (['Super Admin', 'Admission Manager', 'Admission Executive', 'Marketing Manager'].includes(userRole)) {
-            searchPromises.push(
-                searchTable(LEADS_TABLE, q, ['name', 'email', 'phone']).then(res => results.leads = res)
-            );
-        }
-
-        // 2. Campaigns Search (Marketing, Admin, Admission Manager)
-        if (['Super Admin', 'Marketing Manager', 'Admission Manager', 'Finance'].includes(userRole)) {
-            searchPromises.push(
-                searchTable(CAMPAIGNS_TABLE, q, ['name', 'platform']).then(res => results.campaigns = res)
-            );
-        }
-
-        // 3. Users Search (Super Admin Only)
-        if (userRole === 'Super Admin') {
-            searchPromises.push(
-                searchTable(USERS_TABLE, q, ['name', 'email']).then(res => results.users = res)
-            );
-        }
-
-        await Promise.all(searchPromises);
-
-        res.json(results);
-    } catch (error) {
-        console.error("Global Search Error:", error);
-        res.status(500).json({ message: "Server error during search" });
+    // 1. Leads Search (Admission Team & Admin)
+    if (['Super Admin', 'Admission Manager', 'Admission Executive', 'Marketing Manager'].includes(userRole)) {
+        searchPromises.push(
+            searchTable(LEADS_TABLE, q, ['name', 'email', 'phone']).then(res => results.leads = res)
+        );
     }
-};
+
+    // 2. Campaigns Search (Marketing, Admin, Admission Manager)
+    if (['Super Admin', 'Marketing Manager', 'Admission Manager', 'Finance'].includes(userRole)) {
+        searchPromises.push(
+            searchTable(CAMPAIGNS_TABLE, q, ['name', 'platform']).then(res => results.campaigns = res)
+        );
+    }
+
+    // 3. Users Search (Super Admin Only)
+    if (userRole === 'Super Admin') {
+        searchPromises.push(
+            searchTable(USERS_TABLE, q, ['name', 'email']).then(res => results.users = res)
+        );
+    }
+
+    await Promise.all(searchPromises);
+
+    res.json(results);
+});
 
 module.exports = { globalSearch };
