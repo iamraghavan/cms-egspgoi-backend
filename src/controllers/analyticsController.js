@@ -139,7 +139,17 @@ const getAdminStats = asyncHandler(async (req, res) => {
         kpi,
         funnel,
         charts,
-        recentActivity
+        recentActivity,
+        debug: {
+            leads_scanned: leads.length,
+            leads_sample: leads.length > 0 ? leads[0] : null,
+            users_scanned: users.length,
+            payments_scanned: payments.length,
+            adSpends_scanned: adSpends.length,
+            start_ts: startTs,
+            end_ts: endTs,
+            server_time: new Date().toISOString()
+        }
     });
 });
 
