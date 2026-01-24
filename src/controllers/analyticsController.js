@@ -63,11 +63,19 @@ const getAdminStats = asyncHandler(async (req, res) => {
     const dateFilter = (item, dateField = 'created_at') => {
         if (!item[dateField]) return false;
         const d = new Date(item[dateField]).getTime();
+        // console.log(`Debug Date Filter: Field=${dateField}, Value=${item[dateField]}, Parsed=${d}, Start=${startTs}, End=${endTs}`);
         if (isNaN(d)) return false; // Safety check
         return d >= startTs && d <= endTs;
     };
 
+    console.log("DEBUG ANALYTICS:");
+    console.log("StartTS:", startTs, "EndTS:", endTs);
+    console.log("Leads Count Raw:", leads.length);
+    if (leads.length > 0) console.log("First Lead Sample:", JSON.stringify(leads[0]));
+
     const filteredLeads = leads.filter(l => dateFilter(l));
+    console.log("Filtered Leads Count:", filteredLeads.length);
+
     const filteredPayments = payments.filter(p => dateFilter(p, 'date')); // Assuming 'date' field
     const filteredAdSpends = adSpends.filter(s => dateFilter(s, 'date')); // Assuming 'date' field
 
