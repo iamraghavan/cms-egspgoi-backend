@@ -10,6 +10,9 @@ console.log("Requiring db...");
 const { client } = require('./src/config/db');
 console.log("DB required");
 
+// DuckDB Initialization
+const { initDuckDB } = require('./src/config/duckdb');
+
 const { ListTablesCommand } = require("@aws-sdk/client-dynamodb");
 
 const PORT = process.env.PORT || 3000;
@@ -29,6 +32,15 @@ const startServer = async () => {
     console.log("Checking DynamoDB connection...");
     await client.send(new ListTablesCommand({}));
     console.log("Connected to DynamoDB");
+
+    // Initialize DuckDB
+    await initDuckDB();
+    console.log("Connected to DuckDB (Analytics)");
+
+    // Initialize SQLite Cache
+    const { initCache } = require('./src/config/sqliteCache');
+    initCache(); // Synchronous
+    console.log("Initialized SQLite In-Memory Cache");
 
     server = app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);

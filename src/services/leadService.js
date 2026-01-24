@@ -66,6 +66,18 @@ const createLeadInDB = async (leadData, isInternal = false, creatorId = null) =>
         await leadRepository.create(newLead);
     }
 
+    // --- NON-BLOCKING DUAL WRITE (DuckDB) ---
+    // Fire-and-forget logic for Analytics
+    (async () => {
+        try {
+            const { insertLead } = require('./duckdbService');
+            await insertLead(newLead);
+        } catch (err) {
+            logger.warn('DuckDB Dual-Write Skipped:', err.message);
+        }
+    })();
+    // ----------------------------------------
+
     // Real-time broadcast removed
 
     return { isDuplicate: false, lead: newLead, assignedUser: bestAgent };

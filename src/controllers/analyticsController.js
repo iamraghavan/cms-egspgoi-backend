@@ -453,10 +453,63 @@ const getMarketingStats = async (req, res) => {
     }
 };
 
+// --- DUCKDB ANALYTICS (PoC) ---
+const getDuckStats = asyncHandler(async (req, res) => {
+    const { getAnalytics } = require('../services/duckdbService');
+    const stats = await getAnalytics();
+
+    res.json({
+        source: 'DuckDB (High-Performance OLAP)',
+        message: 'Aggregated analytics from local DuckDB instance',
+        data: stats
+    });
+});
+
+// --- SQLITE CACHE (PoC) ---
+const getCacheStats = asyncHandler(async (req, res) => {
+    const { set, get, query } = require('../services/sqliteService');
+    const { v4: uuidv4 } = require('uuid');
+
+    const key = `cache_test_key`;
+
+    // 1. SET Data (if not exists)
+    let cachedData = get(key);
+    if (!cachedData) {
+        cachedData = {
+            id: uuidv4(),
+            name: 'Cached Item',
+            roles: ['admin', 'manager'],
+            meta: { views: 100, likes: 50 },
+            timestamp: new Date().toISOString()
+        };
+        set(key, cachedData, 60); // TTL 60 seconds
+    }
+
+    // 2. QUERY Data using JSON Extensions
+    // Find items where meta.views > 50
+    // Note: 'json_extract' is standard SQLite JSON syntax
+    // We are querying the 'cache' table created in initCache
+    const sqlQuery = `
+        SELECT key, json_extract(value, '$.meta.views') as views 
+        FROM cache 
+        WHERE json_extract(value, '$.meta.views') > 10;
+    `;
+    const queryResults = query(sqlQuery);
+
+    res.json({
+        source: 'SQLite In-Memory Cache',
+        message: 'Data retrieved/set in cache and queried via SQL',
+        key_lookup: cachedData,
+        sql_query_results: queryResults
+    });
+});
+
 module.exports = {
     getAdminStats,
     getMarketingStats,
     getAdmissionStats,
     getFinanceStats,
-    getExecutiveStats
+    getExecutiveStats,
+    getDuckStats,
+    getCacheStats
 };
