@@ -73,10 +73,13 @@ const uploadToGitHub = async (fileBuffer, fileName, mimeType) => {
         const branch = ASSET_GH_BRANCH || 'main';
         const cdnUrl = `https://cdn.jsdelivr.net/gh/${ASSET_GH_OWNER}/${ASSET_GH_REPO}@${branch}/${path}`;
 
-        // Fallback or Log raw for debugging if needed, but return CDN
-        console.log(`Uploaded Asset. CDN: ${cdnUrl}`);
+        // Masking: Custom Domain (cdn.egspgroup.in -> cdn.jsdelivr.net)
+        // Ensure you have a CNAME record: cdn.egspgroup.in -> cdn.jsdelivr.net
+        const maskedUrl = cdnUrl.replace('cdn.jsdelivr.net', 'cdn.egspgroup.in');
 
-        return cdnUrl;
+        console.log(`Uploaded Asset. Masked: ${maskedUrl}`);
+
+        return maskedUrl;
 
     } catch (error) {
         console.error("GitHub Upload Error:", error);
@@ -84,4 +87,26 @@ const uploadToGitHub = async (fileBuffer, fileName, mimeType) => {
     }
 };
 
-module.exports = { uploadToGitHub };
+const maskGitHubUrl = (url) => {
+    if (!url) return url;
+    // 1. Convert GitHub Blob/Raw to jsDelivr
+    // https://github.com/user/repo/blob/main/path/file.pdf -> https://cdn.jsdelivr.net/gh/user/repo@main/path/file.pdf
+    let converted = url;
+    if (url.includes('github.com') && url.includes('/blob/')) {
+        converted = url.replace('github.com', 'cdn.jsdelivr.net/gh').replace('/blob/', '@');
+    } else if (url.includes('raw.githubusercontent.com')) {
+        // start: https://raw.githubusercontent.com/user/repo/main/file
+        // target: https://cdn.jsdelivr.net/gh/user/repo@main/file
+        const parts = url.replace('https://raw.githubusercontent.com/', '').split('/');
+        const user = parts.shift();
+        const repo = parts.shift();
+        const branch = parts.shift();
+        const path = parts.join('/');
+        converted = `https://cdn.jsdelivr.net/gh/${user}/${repo}@${branch}/${path}`;
+    }
+
+    // 2. Custom Domain Mask
+    return converted.replace('cdn.jsdelivr.net', 'cdn.egspgroup.in');
+};
+
+module.exports = { uploadToGitHub, maskGitHubUrl };

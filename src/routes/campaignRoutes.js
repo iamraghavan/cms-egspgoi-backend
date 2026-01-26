@@ -25,8 +25,10 @@ router.put('/budgets/:id', authenticate, checkPermission('budgets'), require('..
 router.patch('/budgets/:id/approve', authenticate, checkPermission('budgets_approve'), approveBudget);
 router.delete('/budgets/:id', authenticate, checkPermission('budgets_delete'), deleteBudget);
 
+const { upload } = require('../middleware/uploadMiddleware');
+
 // Proofs
-router.post('/proofs', authenticate, uploadProof); // Any auth user can upload? Or restricted? Assuming Marketing/Finance
+router.post('/proofs', authenticate, upload.single('file'), uploadProof); // Any auth user can upload
 router.patch('/proofs/:id/verify', authenticate, checkPermission('proofs_verify'), verifyProof);
 
 // Assets

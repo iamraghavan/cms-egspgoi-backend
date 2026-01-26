@@ -5,6 +5,7 @@ const { PutCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const { BUDGET_TABLE_NAME, PROOF_TABLE_NAME } = require('../models/budgetModel');
 
 const { sendSuccess, sendError } = require('../utils/responseUtils');
+const { maskGitHubUrl } = require('../utils/githubUtils');
 const { ScanCommand, GetCommand } = require("@aws-sdk/lib-dynamodb");
 
 // Create a budget request
@@ -179,14 +180,34 @@ const approveBudget = async (req, res) => {
 const uploadProof = async (req, res) => {
   const { budget_id, transaction_ref, proof_url } = req.body;
   const uploaded_by = req.user.id;
+  const { uploadToGitHub, maskGitHubUrl } = require('../utils/githubUtils');
 
   try {
+    let finalProofUrl = null;
+
+    // A. Handle File Upload (Priority)
+    if (req.file) {
+      console.log("Processing File Upload for Proof...");
+      // 1. Upload to GitHub
+      const fileUrl = await uploadToGitHub(req.file.buffer, req.file.originalname, req.file.mimetype);
+      // 2. The utility already returns a masked URL now (via your previous fix), 
+      //    but let's be safe and mask it again to ensure cdn.egspgroup.in
+      finalProofUrl = maskGitHubUrl(fileUrl);
+    }
+    // B. Handle URL String
+    else if (proof_url) {
+      console.log("Processing URL for Proof...");
+      finalProofUrl = maskGitHubUrl(proof_url);
+    } else {
+      return sendError(res, { message: "Please provide 'file' or 'proof_url'" }, 'Upload Proof', 400);
+    }
+
     const id = uuidv4();
     const newProof = {
       id,
       budget_id,
       transaction_ref,
-      proof_url,
+      proof_url: finalProofUrl,
       status: 'pending',
       uploaded_by,
       created_at: getISTTimestamp(),
