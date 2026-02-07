@@ -113,6 +113,11 @@ const getPage = async (req, res) => {
         const page = result.Items[0];
         if (page.status !== 'published') return res.status(404).json({ message: "Page not found" });
 
+        // Enforce scheduled publishing
+        if (page.scheduled_at && new Date(page.scheduled_at) > new Date()) {
+            return res.status(404).json({ message: "Page not found" });
+        }
+
         res.json(page);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -145,6 +150,11 @@ const getPost = async (req, res) => {
         const post = result.Items[0];
         if (post.status !== 'published') return res.status(404).json({ message: "Post not found" });
 
+        // Enforce scheduled publishing
+        if (post.scheduled_at && new Date(post.scheduled_at) > new Date()) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+
         res.json(post);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -159,6 +169,8 @@ const getPosts = async (req, res) => {
         const siteId = await resolveSiteId(domain);
         if (!siteId) return res.status(404).json({ message: "Site not found" });
 
+        const { college_id, course_id } = req.query;
+
         // Fetch All for Site (Sorted by Date)
         const command = new QueryCommand({
             TableName: CMS_POSTS_TABLE,
@@ -171,10 +183,13 @@ const getPosts = async (req, res) => {
         const result = await docClient.send(command);
         let items = result.Items || [];
 
-        // Filter Published
-        items = items.filter(p => p.status === 'published');
+        // Filter Published & Scheduled
+        const now = new Date();
+        items = items.filter(p => p.status === 'published' && (!p.scheduled_at || new Date(p.scheduled_at) <= now));
 
         // Apply Filters (Memory Filter for MVP)
+        if (college_id) items = items.filter(p => p.college_id === college_id);
+        if (course_id) items = items.filter(p => p.course_id === course_id);
         if (category) items = items.filter(p => p.category_id === category || p.subcategory_id === category);
         if (tag) items = items.filter(p => p.tags && p.tags.includes(tag));
         if (search) {

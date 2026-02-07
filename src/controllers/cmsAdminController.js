@@ -249,15 +249,19 @@ const createPage = async (req, res) => {
             req.body.slug = req.body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         }
 
-        const { error, value } = pageSchema.validate({
+        const data = {
             ...req.body,
             id: uuidv4(),
             created_at: new Date().toISOString()
-        });
-        if (error) return res.status(400).json({ error: error.details[0].message });
+        };
 
-        // Check Unique Slug in Site
-        // TODO: Optimization - Perform Query check
+        // If publishing now
+        if (data.status === 'published' && !data.published_at) {
+            data.published_at = new Date().toISOString();
+        }
+
+        const { error, value } = pageSchema.validate(data);
+        if (error) return res.status(400).json({ error: error.details[0].message });
 
         await docClient.send(new PutCommand({ TableName: CMS_PAGES_TABLE, Item: value }));
         res.status(201).json(value);
@@ -267,10 +271,23 @@ const createPage = async (req, res) => {
 };
 
 const getPages = async (req, res) => {
-    const { siteId } = req.query;
+    const { siteId, collegeId, courseId } = req.query;
     if (!siteId) return res.status(400).json({ message: "siteId required" });
     try {
-        const items = await scanBySite(CMS_PAGES_TABLE, siteId);
+        // Query by SiteIndex
+        const command = new QueryCommand({
+            TableName: CMS_PAGES_TABLE,
+            IndexName: 'SiteIndex',
+            KeyConditionExpression: 'site_id = :sid',
+            ExpressionAttributeValues: { ':sid': siteId }
+        });
+        const result = await docClient.send(command);
+        let items = result.Items || [];
+
+        // Apply filters in memory for Admin (Small dataset usually)
+        if (collegeId) items = items.filter(i => i.college_id === collegeId);
+        if (courseId) items = items.filter(i => i.course_id === courseId);
+
         res.json(items);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -294,11 +311,37 @@ const updatePage = async (req, res) => {
         if (!existing.Item) return res.status(404).json({ message: "Page not found" });
 
         const updated = { ...existing.Item, ...req.body, updated_at: new Date().toISOString() };
+
+        // Handle Publishing logic
+        if (updated.status === 'published' && !existing.Item.published_at) {
+            updated.published_at = new Date().toISOString();
+        }
+
         const { error, value } = pageSchema.validate(updated);
         if (error) return res.status(400).json({ error: error.details[0].message });
 
         await docClient.send(new PutCommand({ TableName: CMS_PAGES_TABLE, Item: value }));
         res.json(value);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const publishPage = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const existing = await docClient.send(new GetCommand({ TableName: CMS_PAGES_TABLE, Key: { id } }));
+        if (!existing.Item) return res.status(404).json({ message: "Page not found" });
+
+        const updated = {
+            ...existing.Item,
+            status: 'published',
+            published_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        await docClient.send(new PutCommand({ TableName: CMS_PAGES_TABLE, Item: updated }));
+        res.json({ message: "Page published successfully", page: updated });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -346,10 +389,21 @@ const createPost = async (req, res) => {
 };
 
 const getPosts = async (req, res) => {
-    const { siteId } = req.query;
+    const { siteId, collegeId, courseId } = req.query;
     if (!siteId) return res.status(400).json({ message: "siteId required" });
     try {
-        const items = await scanBySite(CMS_POSTS_TABLE, siteId);
+        const result = await docClient.send(new QueryCommand({
+            TableName: CMS_POSTS_TABLE,
+            IndexName: 'SiteIndex',
+            KeyConditionExpression: 'site_id = :sid',
+            ExpressionAttributeValues: { ':sid': siteId }
+        }));
+        let items = result.Items || [];
+
+        // Apply filters
+        if (collegeId) items = items.filter(i => i.college_id === collegeId);
+        if (courseId) items = items.filter(i => i.course_id === courseId);
+
         // Sort by published_at desc
         items.sort((a, b) => new Date(b.published_at || 0) - new Date(a.published_at || 0));
         res.json(items);
@@ -386,6 +440,26 @@ const updatePost = async (req, res) => {
 
         await docClient.send(new PutCommand({ TableName: CMS_POSTS_TABLE, Item: value }));
         res.json(value);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const publishPost = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const existing = await docClient.send(new GetCommand({ TableName: CMS_POSTS_TABLE, Key: { id } }));
+        if (!existing.Item) return res.status(404).json({ message: "Post not found" });
+
+        const updated = {
+            ...existing.Item,
+            status: 'published',
+            published_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        await docClient.send(new PutCommand({ TableName: CMS_POSTS_TABLE, Item: updated }));
+        res.json({ message: "Post published successfully", post: updated });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -459,8 +533,8 @@ const deleteAd = async (req, res) => {
 module.exports = {
     createSite, getSites, updateSite, deleteSite, verifySiteDNS,
     createCategory, getCategories, updateCategory, deleteCategory,
-    createPage, getPages, getPageById, updatePage, deletePage,
-    createPost, getPosts, getPostById, updatePost, deletePost,
+    createPage, getPages, getPageById, updatePage, deletePage, publishPage,
+    createPost, getPosts, getPostById, updatePost, deletePost, publishPost,
     createAd, getAds, updateAd, deleteAd,
     uploadAsset
 };

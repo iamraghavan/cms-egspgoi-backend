@@ -26,6 +26,7 @@ router.post('/admin/pages', authMiddleware, roleMiddleware('super_admin'), cmsAd
 router.get('/admin/pages', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.getPages);
 router.get('/admin/pages/:id', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.getPageById);
 router.put('/admin/pages/:id', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.updatePage);
+router.post('/admin/pages/:id/publish', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.publishPage);
 router.delete('/admin/pages/:id', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.deletePage);
 
 // Posts
@@ -33,6 +34,7 @@ router.post('/admin/posts', authMiddleware, roleMiddleware('super_admin'), cmsAd
 router.get('/admin/posts', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.getPosts);
 router.get('/admin/posts/:id', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.getPostById);
 router.put('/admin/posts/:id', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.updatePost);
+router.post('/admin/posts/:id/publish', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.publishPost);
 router.delete('/admin/posts/:id', authMiddleware, roleMiddleware('super_admin'), cmsAdmin.deletePost);
 
 // Ads

@@ -104,6 +104,7 @@ app.use('/api/v1/cms', require('./src/routes/cmsRoutes'));
 
 // Crons
 require('./src/cron/notificationCron');
+require('./src/cron/cmsCron');
 
 // Error Handler
 app.use(errorHandler);

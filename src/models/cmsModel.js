@@ -65,10 +65,18 @@ const categorySchema = Joi.object({
 const pageSchema = Joi.object({
     id: Joi.string().required(), // PK: PAGE#uuid
     site_id: Joi.string().required(), // GSI PK
+    college_id: Joi.string().allow(null, ''), // Optional: Filter by College
+    course_id: Joi.string().allow(null, ''), // Optional: Filter by Course
     title: Joi.string().required(),
     slug: Joi.string().required(),
     language: Joi.string().default('en'),
     content: Joi.string().allow(''), // HTML from TinyMCE
+    blocks: Joi.array().items(Joi.object({
+        id: Joi.string().required(),
+        type: Joi.string().valid('text', 'image', 'video', 'cta', 'form', 'gallery').required(),
+        data: Joi.object().required(),
+        order: Joi.number().default(0)
+    })).default([]), // For Page Builder
     parent_id: Joi.string().allow(null),
     order: Joi.number().default(1),
     location: Joi.string().valid('header', 'footer', 'both', 'none').default('header'),
@@ -91,6 +99,7 @@ const pageSchema = Joi.object({
     }).default({}),
     main_image: Joi.string().uri().allow(null, ''), // Hero Image / Thumbnail
     status: Joi.string().valid('published', 'draft').default('draft'),
+    scheduled_at: Joi.string().isoDate().allow(null, ''), // For future publishing
     created_at: Joi.string(),
     updated_at: Joi.string()
 });
@@ -99,6 +108,8 @@ const pageSchema = Joi.object({
 const postSchema = Joi.object({
     id: Joi.string().required(), // PK: POST#uuid
     site_id: Joi.string().required(), // GSI PK
+    college_id: Joi.string().allow(null, ''),
+    course_id: Joi.string().allow(null, ''),
     title: Joi.string().required(),
     slug: Joi.string().required(), // Unique per site
     language: Joi.string().default('en'),
@@ -141,6 +152,7 @@ const postSchema = Joi.object({
     }).default({}),
 
     status: Joi.string().valid('published', 'draft').default('draft'),
+    scheduled_at: Joi.string().isoDate().allow(null, ''), // For future publishing
     published_at: Joi.string().isoDate().allow(null),
     author_id: Joi.string().required(),
     created_at: Joi.string(),
