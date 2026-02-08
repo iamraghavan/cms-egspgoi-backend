@@ -169,7 +169,7 @@ const getPosts = async (req, res) => {
         const siteId = await resolveSiteId(domain);
         if (!siteId) return res.status(404).json({ message: "Site not found" });
 
-        const { college_id, course_id } = req.query;
+        const { college_id, college_name, course_id } = req.query;
 
         // Fetch All for Site (Sorted by Date)
         const command = new QueryCommand({
@@ -189,6 +189,10 @@ const getPosts = async (req, res) => {
 
         // Apply Filters (Memory Filter for MVP)
         if (college_id) items = items.filter(p => p.college_id === college_id);
+        if (college_name) {
+            const q = college_name.toLowerCase();
+            items = items.filter(p => p.college_name?.toLowerCase().includes(q));
+        }
         if (course_id) items = items.filter(p => p.course_id === course_id);
         if (category) items = items.filter(p => p.category_id === category || p.subcategory_id === category);
         if (tag) items = items.filter(p => p.tags && p.tags.includes(tag));
@@ -212,6 +216,43 @@ const getPosts = async (req, res) => {
             }
         });
 
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const getPages = async (req, res) => {
+    try {
+        const { domain } = req.params;
+        const siteId = await resolveSiteId(domain);
+        if (!siteId) return res.status(404).json({ message: "Site not found" });
+
+        const { college_id, college_name, course_id } = req.query;
+
+        // Fetch All for Site
+        const command = new QueryCommand({
+            TableName: CMS_PAGES_TABLE,
+            IndexName: 'SiteIndex',
+            KeyConditionExpression: 'site_id = :sid',
+            ExpressionAttributeValues: { ':sid': siteId }
+        });
+
+        const result = await docClient.send(command);
+        let items = result.Items || [];
+
+        // Filter Published & Visibility
+        const now = new Date();
+        items = items.filter(p => p.status === 'published' && (!p.scheduled_at || new Date(p.scheduled_at) <= now) && p.visibility?.show);
+
+        // Apply Filters (Memory Filter for MVP)
+        if (college_id) items = items.filter(p => p.college_id === college_id);
+        if (college_name) {
+            const q = college_name.toLowerCase();
+            items = items.filter(p => p.college_name?.toLowerCase().includes(q));
+        }
+        if (course_id) items = items.filter(p => p.course_id === course_id);
+
+        res.json(items.sort((a, b) => (a.order || 0) - (b.order || 0)));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -261,6 +302,7 @@ const getSitemap = async (req, res) => {
 module.exports = {
     getSiteConfig,
     getPage,
+    getPages,
     getPost,
     getPosts,
     getSitemap

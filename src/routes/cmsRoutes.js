@@ -52,6 +52,7 @@ router.post('/admin/upload-asset', authMiddleware, roleMiddleware('super_admin')
 // No Auth Required (Or use API Key logic if desired, but typically public)
 router.get('/public/:domain/config', cmsPublic.getSiteConfig);
 router.get('/public/:domain/sitemap.xml', cmsPublic.getSitemap); // Actually returns JSON for now, frontend renders XML
+router.get('/public/:domain/pages', cmsPublic.getPages);
 router.get('/public/:domain/page/:slug', cmsPublic.getPage);
 router.get('/public/:domain/post/:slug', cmsPublic.getPost);
 router.get('/public/:domain/posts', cmsPublic.getPosts); // With ?category, ?tag, ?page

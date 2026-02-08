@@ -271,7 +271,7 @@ const createPage = async (req, res) => {
 };
 
 const getPages = async (req, res) => {
-    const { siteId, collegeId, courseId } = req.query;
+    const { siteId, collegeId, collegeName, courseId } = req.query;
     if (!siteId) return res.status(400).json({ message: "siteId required" });
     try {
         // Query by SiteIndex
@@ -286,6 +286,10 @@ const getPages = async (req, res) => {
 
         // Apply filters in memory for Admin (Small dataset usually)
         if (collegeId) items = items.filter(i => i.college_id === collegeId);
+        if (collegeName) {
+            const q = collegeName.toLowerCase();
+            items = items.filter(i => i.college_name?.toLowerCase().includes(q));
+        }
         if (courseId) items = items.filter(i => i.course_id === courseId);
 
         res.json(items);

@@ -66,11 +66,15 @@ const pageSchema = Joi.object({
     id: Joi.string().required(), // PK: PAGE#uuid
     site_id: Joi.string().required(), // GSI PK
     college_id: Joi.string().allow(null, ''), // Optional: Filter by College
+    college_name: Joi.string().allow(null, ''), // NEW: College Name (Associate as category type)
     course_id: Joi.string().allow(null, ''), // Optional: Filter by Course
     title: Joi.string().required(),
     slug: Joi.string().required(),
     language: Joi.string().default('en'),
     content: Joi.string().allow(''), // HTML from TinyMCE
+    category_id: Joi.string().allow(null), // Aligned with Post
+    subcategory_id: Joi.string().allow(null), // Aligned with Post
+    tags: Joi.array().items(Joi.string()).default([]), // Aligned with Post
     blocks: Joi.array().items(Joi.object({
         id: Joi.string().required(),
         type: Joi.string().valid('text', 'image', 'video', 'cta', 'form', 'gallery').required(),
@@ -109,6 +113,7 @@ const postSchema = Joi.object({
     id: Joi.string().required(), // PK: POST#uuid
     site_id: Joi.string().required(), // GSI PK
     college_id: Joi.string().allow(null, ''),
+    college_name: Joi.string().allow(null, ''), // NEW: College Name (Associate as category type)
     course_id: Joi.string().allow(null, ''),
     title: Joi.string().required(),
     slug: Joi.string().required(), // Unique per site
