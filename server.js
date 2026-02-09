@@ -97,6 +97,7 @@ app.use('/api/v1/smartflo', require('./src/routes/smartfloApiRoutes'));
 app.use('/api/v1/smartflo-api', require('./src/routes/smartfloApiRoutes'));
 app.use('/api/v1/notifications', require('./src/routes/notificationRoutes'));
 app.use('/api/v1/cms', require('./src/routes/cmsRoutes'));
+app.use('/api/v1/whatsapp', require('./src/routes/whatsappRoutes'));
 
 
 
