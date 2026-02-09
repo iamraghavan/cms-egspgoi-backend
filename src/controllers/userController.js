@@ -600,4 +600,29 @@ const updateDeviceToken = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile, getUsers, getUserById, createUser, refreshToken, toggleAvailability, updateUser, deleteUser, updateProfile, updateDeviceToken };
+const pusherAuth = async (req, res) => {
+  try {
+    const socketId = req.body.socket_id;
+    const channel = req.body.channel_name;
+
+    if (!socketId || !channel) {
+      return res.status(400).json({ message: 'socket_id and channel_name are required' });
+    }
+
+    const pusher = require('../config/pusher');
+    const auth = pusher.authorizeChannel(socketId, channel, {
+      user_id: req.user.id,
+      user_info: {
+        name: req.user.name,
+        email: req.user.email
+      }
+    });
+
+    res.send(auth);
+  } catch (error) {
+    console.error('Pusher Auth Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { register, login, getProfile, getUsers, getUserById, createUser, refreshToken, toggleAvailability, updateUser, deleteUser, updateProfile, updateDeviceToken, pusherAuth };

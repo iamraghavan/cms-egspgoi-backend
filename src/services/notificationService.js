@@ -2,6 +2,7 @@ const { admin } = require('../config/firebase');
 const { docClient } = require('../config/db');
 const { PutCommand, GetCommand, ScanCommand } = require("@aws-sdk/lib-dynamodb");
 const { getISTTimestamp } = require('../utils/timeUtils');
+const pusher = require('../config/pusher');
 
 const NOTIFICATIONS_TABLE = "Notifications";
 const USERS_TABLE = "Users";
@@ -53,6 +54,19 @@ const sendToUser = async (userId, title, body, data = {}) => {
             TableName: NOTIFICATIONS_TABLE,
             Item: notification
         }));
+
+        // 4. Trigger Real-time Event via Pusher
+        try {
+            await pusher.trigger(`private-user-${userId}`, 'new-notification', {
+                id: notificationId,
+                title,
+                body,
+                timestamp: notification.timestamp,
+                data: data || {}
+            });
+        } catch (pusherError) {
+            console.error(`Pusher Trigger Error for user ${userId}:`, pusherError.message);
+        }
 
         return { success: true, notificationId, fcmMessageId };
 

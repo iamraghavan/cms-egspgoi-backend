@@ -22,6 +22,12 @@ const { cacheMiddleware } = require('./src/middleware/cacheMiddleware');
 // ...
 
 // Middleware
+app.use(cors({
+  origin: true, // Allow any origin or list specific ones
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  credentials: true
+}));
+
 app.set('etag', 'strong'); // Enable strong ETag generation
 app.use(conditionalRequestMiddleware); // Encourage conditional requests
 app.use(compression()); // Compress all responses
@@ -29,32 +35,32 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline for some UI frameworks if needed
+      scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.pusherapp.com"] // Allow external APIs if strictly needed
+      connectSrc: [
+        "'self'",
+        "https://api.pusherapp.com",
+        "https://6000-firebase-studio-1765250816618.cluster-cd3bsnf6r5bemwki2bxljme5as.cloudworkstations.dev"
+      ]
     }
   },
   hsts: {
-    maxAge: 31536000, // 1 Year
+    maxAge: 31536000,
     includeSubDomains: true,
     preload: true
   },
   frameguard: {
-    action: 'deny' // Prevent Clickjacking
+    action: 'deny'
   }
 }));
-app.use(cors({
-  origin: true, // Allow any origin
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  credentials: true
-}));
+
 app.use(morgan('dev'));
-app.use(express.json({ limit: '10kb' })); // Body limit
+app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
-app.use(hpp()); // Prevent Parameter Pollution
-app.use(globalLimiter); // Global Rate Limit
+app.use(hpp());
+app.use(globalLimiter);
 
 // Routes 
 app.get('/', (req, res) => {

@@ -16,6 +16,7 @@ const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 router.get('/users/profile', authenticate, userController.getProfile); // Get Own Profile
 router.patch('/users/profile', authenticate, userController.updateProfile); // Update Own Profile
 router.post('/users/device-token', authenticate, userController.updateDeviceToken);
+router.post('/pusher/auth', authenticate, userController.pusherAuth);
 
 // User Management (Admin/Manager)
 router.post('/auth/refresh', userController.refreshToken);
