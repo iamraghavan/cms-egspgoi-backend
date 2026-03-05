@@ -202,7 +202,7 @@ const getUsers = async (req, res) => {
 
     const scanParams = {
       TableName: USERS_TABLE,
-      ProjectionExpression: "id, #name, email, role_id, created_at, #status, is_available", // Added is_available
+      ProjectionExpression: "id, #name, email, role_id, created_at, #status, is_available, agent_number, caller_id, phone", // Added extra fields
       ExpressionAttributeNames: expressionAttributeNames
     };
 
