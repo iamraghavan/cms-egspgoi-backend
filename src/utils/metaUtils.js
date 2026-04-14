@@ -5,10 +5,12 @@
 /**
  * Normalizes Meta Lead field_data array into a flat object
  * @param {Array} fieldData - Meta's field_data array
+ * @param {Object} extraMetadata - Optional extra data (id, created_time, etc.)
  * @returns {Object} Normalized lead object
  */
-const normalizeMetaLead = (fieldData) => {
+const normalizeMetaLead = (fieldData, extraMetadata = {}) => {
     const normalized = {
+        meta_lead_id: extraMetadata.id || null,
         name: 'Meta Lead', // Fallback
         email: null,
         phone: null,
@@ -18,6 +20,7 @@ const normalizeMetaLead = (fieldData) => {
         college: 'Meta Ads', // Default source
         admission_year: new Date().getFullYear().toString(),
         source_website: 'facebook.com',
+        created_at: extraMetadata.created_time || null,
         form_data: {}
     };
 

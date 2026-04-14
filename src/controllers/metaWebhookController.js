@@ -94,8 +94,62 @@ const handleMetaLead = async (req, res) => {
     }
 };
 
+/**
+ * POST - Receive Leads from Google Sheets
+ * Receives flat row data and stores it in the DB.
+ */
+const handleGoogleSheetLead = async (req, res) => {
+    logger.info('Google Sheet Lead Received');
+    
+    try {
+        const rowData = req.body;
+        
+        // Basic normalization for Google Sheet headers (which might have spaces/lowercases)
+        // Supported headers from user: id, created_time, course_interested, full_name, phone_number, city
+        const normalizedData = {
+            meta_lead_id: rowData.id || null,
+            name: rowData.full_name || rowData.name || 'Sheet Lead',
+            email: rowData.email || null,
+            phone: rowData.phone_number || rowData.phone || null,
+            course: rowData.course_interested || rowData.course || 'Unknown',
+            district: rowData.city || rowData.district || null,
+            state: rowData.state || null,
+            admission_year: new Date().getFullYear().toString(),
+            source_website: 'google_sheets',
+            college: 'ADS',
+            created_at: rowData.created_time || new Date().toISOString(),
+            form_data: rowData
+        };
+
+        // Clean phone
+        if (normalizedData.phone) {
+            normalizedData.phone = normalizedData.phone.toString().replace(/^p:/, '');
+            if (!normalizedData.phone.startsWith('+')) {
+                normalizedData.phone = `+${normalizedData.phone}`;
+            }
+        }
+
+        logger.info(`Processing Sheet Lead: ${normalizedData.name} (${normalizedData.phone})`);
+
+        const result = await leadService.createLeadInDB(normalizedData, true, 'GOOGLE_SHEET_SYNC');
+
+        if (result.isDuplicate) {
+            logger.info(`Sheet Lead ${normalizedData.meta_lead_id} is a duplicate. Logic skipped.`);
+        } else {
+            logger.info(`Sheet Lead ${normalizedData.meta_lead_id} successfully stored.`);
+        }
+
+        res.status(200).json({ status: 'success', message: 'Lead stored' });
+    } catch (error) {
+        logger.error('Error processing Google Sheet Lead:', error.message);
+        res.status(500).json({ status: 'error', message: error.message });
+    }
+};
+
 module.exports = {
     verifyWebhook,
-    handleMetaLead
+    handleMetaLead,
+    handleGoogleSheetLead
 };
+
 
