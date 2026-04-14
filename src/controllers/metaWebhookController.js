@@ -37,7 +37,8 @@ const handleMetaLead = async (req, res) => {
             return res.status(200).send('EVENT_RECEIVED');
         }
 
-        const leadId = changes.leadgen_id;
+        // Meta Testing Tool often prefixes IDs with 'l:' 
+        const leadId = changes.leadgen_id.replace(/^l:/, '');
         const formId = changes.form_id;
         const pageId = changes.page_id;
 
@@ -50,7 +51,8 @@ const handleMetaLead = async (req, res) => {
             return res.status(200).send('EVENT_RECEIVED');
         }
 
-        const response = await axios.get(`https://graph.facebook.com/v12.0/${leadId}`, {
+        // Using v19.0 for better compatibility
+        const response = await axios.get(`https://graph.facebook.com/v19.0/${leadId}`, {
             params: { access_token: ACCESS_TOKEN }
         });
 
