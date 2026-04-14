@@ -51,8 +51,8 @@ const handleMetaLead = async (req, res) => {
             return res.status(200).send('EVENT_RECEIVED');
         }
 
-        // Using v19.0 for better compatibility
-        const response = await axios.get(`https://graph.facebook.com/v19.0/${leadId}`, {
+        // Using v24.0 for better compatibility
+        const response = await axios.get(`https://graph.facebook.com/v24.0/${leadId}`, {
             params: { access_token: ACCESS_TOKEN }
         });
 
