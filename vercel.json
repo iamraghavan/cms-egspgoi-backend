@@ -34,15 +34,6 @@
       "src": "/(.*)",
       "dest": "/api/index.js"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/v1/cron/notifications",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/v1/cron/cms-publishing",
-      "schedule": "0 * * * *"
-    }
   ]
-}
+}
+
