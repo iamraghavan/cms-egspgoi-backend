@@ -3,24 +3,29 @@ const logger = require('../utils/logger');
 const leadService = require('../services/leadService');
 
 // Verify Token from environment
-const VERIFY_TOKEN = process.env.JWT_SECRET;
+
 
 /**
  * GET - Meta Webhook Verification
  * This is called by Meta when you first set up the webhook.
  */
 const verifyWebhook = (req, res) => {
+    const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN;
+
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
 
+    console.log("Mode:", mode);
+    console.log("Token:", token);
+    console.log("Verify Token:", VERIFY_TOKEN);
+
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-        logger.info('Meta Webhook Verified Successfully');
+        console.log("Webhook verified");
         return res.status(200).send(challenge);
-    } else {
-        logger.warn('Meta Webhook Verification Failed: Invalid Token');
-        return res.status(403).send('Verification failed');
     }
+
+    return res.status(403).send("Verification failed");
 };
 
 /**
