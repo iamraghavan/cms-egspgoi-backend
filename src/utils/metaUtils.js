@@ -3,6 +3,16 @@
  */
 
 /**
+ * Strips common Meta prefixes (l:, f:, p:) from a string
+ * @param {string|number} value 
+ * @returns {string} Cleaned string
+ */
+const stripMetaPrefix = (value) => {
+    if (!value) return value;
+    return value.toString().replace(/^[lfp]:/i, '');
+};
+
+/**
  * Normalizes Meta Lead field_data array into a flat object
  * @param {Array} fieldData - Meta's field_data array
  * @param {Object} extraMetadata - Optional extra data (id, created_time, etc.)
@@ -10,7 +20,7 @@
  */
 const normalizeMetaLead = (fieldData, extraMetadata = {}) => {
     const normalized = {
-        meta_lead_id: extraMetadata.id || null,
+        meta_lead_id: stripMetaPrefix(extraMetadata.id) || null,
         name: 'Meta Lead', // Fallback
         email: null,
         phone: null,
@@ -47,11 +57,10 @@ const normalizeMetaLead = (fieldData, extraMetadata = {}) => {
                 break;
             case 'phone_number':
             case 'phone':
-                // Meta test tool sometimes prefixes with 'p:'
-                let rawPhone = value.replace(/^p:/, '');
-                // Meta phone numbers often start with + or are just digits. 
-                // Our schema expects E.164 pattern: /^\+[1-9]\d{1,14}$/
-                normalized.phone = rawPhone.startsWith('+') ? rawPhone : `+${rawPhone}`;
+                // Strip p: prefix
+                const cleanPhone = stripMetaPrefix(value);
+                // Prepend + if missing
+                normalized.phone = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
                 break;
             case 'state':
                 normalized.state = value;
@@ -74,5 +83,7 @@ const normalizeMetaLead = (fieldData, extraMetadata = {}) => {
 };
 
 module.exports = {
-    normalizeMetaLead
+    normalizeMetaLead,
+    stripMetaPrefix
 };
+

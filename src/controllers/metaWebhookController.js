@@ -1,7 +1,7 @@
 const axios = require('axios');
 const logger = require('../utils/logger');
 const leadService = require('../services/leadService');
-const { normalizeMetaLead } = require('../utils/metaUtils');
+const { normalizeMetaLead, stripMetaPrefix } = require('../utils/metaUtils');
 
 /**
  * GET - Meta Webhook Verification
@@ -37,9 +37,9 @@ const handleMetaLead = async (req, res) => {
             return res.status(200).send('EVENT_RECEIVED');
         }
 
-        // Meta Testing Tool often prefixes IDs with 'l:' 
-        const leadId = changes.leadgen_id.replace(/^l:/, '');
-        const formId = changes.form_id;
+        // Use stripMetaPrefix to clean IDs (Meta often adds l: or f:)
+        const leadId = stripMetaPrefix(changes.leadgen_id);
+        const formId = stripMetaPrefix(changes.form_id);
         const pageId = changes.page_id;
 
         logger.info(`Received Meta Lead: ID=${leadId}, FormID=${formId}, PageID=${pageId}`);
@@ -104,13 +104,12 @@ const handleGoogleSheetLead = async (req, res) => {
     try {
         const rowData = req.body;
         
-        // Basic normalization for Google Sheet headers (which might have spaces/lowercases)
-        // Supported headers from user: id, created_time, course_interested, full_name, phone_number, city
+        // Use stripMetaPrefix for cleaning IDs and phone numbers
         const normalizedData = {
-            meta_lead_id: rowData.id || null,
+            meta_lead_id: stripMetaPrefix(rowData.id) || null,
             name: rowData.full_name || rowData.name || 'Sheet Lead',
             email: rowData.email || null,
-            phone: rowData.phone_number || rowData.phone || null,
+            phone: stripMetaPrefix(rowData.phone_number || rowData.phone) || null,
             course: rowData.course_interested || rowData.course || 'Unknown',
             district: rowData.city || rowData.district || null,
             state: rowData.state || null,
@@ -118,16 +117,17 @@ const handleGoogleSheetLead = async (req, res) => {
             source_website: 'google_sheets',
             college: 'ADS',
             created_at: rowData.created_time || new Date().toISOString(),
+            form_id: stripMetaPrefix(rowData.form_id) || null,
             form_data: rowData
         };
 
-        // Clean phone
+        // Clean phone: Ensure + prefix for CRM schema
         if (normalizedData.phone) {
-            normalizedData.phone = normalizedData.phone.toString().replace(/^p:/, '');
-            if (!normalizedData.phone.startsWith('+')) {
+            if (!normalizedData.phone.toString().startsWith('+')) {
                 normalizedData.phone = `+${normalizedData.phone}`;
             }
         }
+
 
         logger.info(`Processing Sheet Lead: ${normalizedData.name} (${normalizedData.phone})`);
 

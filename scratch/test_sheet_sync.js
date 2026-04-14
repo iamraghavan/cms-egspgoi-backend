@@ -3,12 +3,14 @@ const axios = require('axios');
 // Simulate a Google Sheet row POST
 const mockSheetRow = {
     id: 'l:test_sheet_id_123',
+    form_id: 'f:test_form_id_456',
     created_time: '2026-04-14T11:45:00-05:00',
-    full_name: 'Sheet Test User',
+    full_name: 'Prefix Test User',
     phone_number: 'p:+919876543211',
     city: 'Nagapattinam',
     course_interested: 'B.Tech IT'
 };
+
 
 async function testSheetSync() {
     console.log('--- TESTING GOOGLE SHEET SYNC ENDPOINT ---');
