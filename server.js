@@ -105,14 +105,18 @@ app.use('/api/v1/notifications', require('./src/routes/notificationRoutes'));
 app.use('/api/v1/cms', require('./src/routes/cmsRoutes'));
 app.use('/api/v1/whatsapp', require('./src/routes/whatsappRoutes'));
 app.use('/api/v1/meta', require('./src/routes/metaWebhookRoutes'));
+app.use('/api/v1/cron', require('./src/routes/cronRoutes'));
 
 
 
 
 
-// Crons
-require('./src/cron/notificationCron');
-require('./src/cron/cmsCron');
+// Crons: Only run node-cron locally or in non-serverless environments.
+// On Vercel, we use Vercel Cron Jobs to hit the /api/v1/cron endpoints.
+if (process.env.NODE_ENV !== 'production') {
+  require('./src/cron/notificationCron');
+  require('./src/cron/cmsCron');
+}
 
 // Error Handler
 app.use(errorHandler);
