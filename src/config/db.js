@@ -10,6 +10,7 @@ const client = new DynamoDBClient({
   credentials: {
     accessKeyId: config.aws.accessKeyId,
     secretAccessKey: config.aws.secretAccessKey,
+    sessionToken: config.aws.sessionToken,
   },
   requestHandler: new NodeHttpHandler({
     connectionTimeout: 5000,

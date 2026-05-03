@@ -22,6 +22,7 @@ const config = {
         region: getEnv('AWS_REGION'),
         accessKeyId: getEnv('AWS_ACCESS_KEY_ID'),
         secretAccessKey: getEnv('AWS_SECRET_ACCESS_KEY'),
+        sessionToken: getEnv('AWS_SESSION_TOKEN', null),
     },
 
     assets: {

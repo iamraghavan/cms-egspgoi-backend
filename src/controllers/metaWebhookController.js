@@ -103,13 +103,25 @@ const handleGoogleSheetLead = async (req, res) => {
     
     try {
         const rowData = req.body;
+
+        // 1. Basic Validation: Reject dummy or empty data
+        const name = rowData.full_name || rowData.name || 'Sheet Lead';
+        const phone = stripMetaPrefix(rowData.phone_number || rowData.phone) || null;
+        
+        if (name === 'Sheet Lead' || !phone) {
+            logger.warn(`Google Sheet Lead Rejected: Invalid name (${name}) or missing phone`);
+            return res.status(200).json({ 
+                status: 'skipped', 
+                message: 'Invalid lead data (Sheet Lead or missing phone)' 
+            });
+        }
         
         // Use stripMetaPrefix for cleaning IDs and phone numbers
         const normalizedData = {
             meta_lead_id: stripMetaPrefix(rowData.id) || null,
-            name: rowData.full_name || rowData.name || 'Sheet Lead',
+            name: name,
             email: rowData.email || null,
-            phone: stripMetaPrefix(rowData.phone_number || rowData.phone) || null,
+            phone: phone,
             course: rowData.course_interested || rowData.course || 'Unknown',
             district: rowData.city || rowData.district || null,
             state: rowData.state || null,
@@ -131,10 +143,12 @@ const handleGoogleSheetLead = async (req, res) => {
 
         logger.info(`Processing Sheet Lead: ${normalizedData.name} (${normalizedData.phone})`);
 
-        const result = await leadService.createLeadInDB(normalizedData, true, 'GOOGLE_SHEET_SYNC');
+        // Use isInternal=false to trigger uniqueness check in leadService
+        const result = await leadService.createLeadInDB(normalizedData, false, 'GOOGLE_SHEET_SYNC');
 
         if (result.isDuplicate) {
-            logger.info(`Sheet Lead ${normalizedData.meta_lead_id} is a duplicate. Logic skipped.`);
+            logger.info(`Sheet Lead ${normalizedData.phone} is a duplicate. Logic skipped.`);
+            return res.status(200).json({ status: 'duplicate', message: 'Lead already exists' });
         } else {
             logger.info(`Sheet Lead ${normalizedData.meta_lead_id} successfully stored.`);
         }

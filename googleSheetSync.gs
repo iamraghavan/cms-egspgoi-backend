@@ -12,25 +12,57 @@ const BACKEND_URL = 'https://cms-egspgoi.vercel.app/api/v1/meta/sheets';
  */
 function syncLeadToCMS(e) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const lastRow = sheet.getLastRow();
-  const range = sheet.getRange(lastRow, 1, 1, sheet.getLastColumn());
-  const values = range.getValues()[0];
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  let rowData = [];
+  let headers = [];
+
+  // If triggered by a form submit, use the values from the event object
+  if (e && e.values) {
+    rowData = e.values;
+    headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  } else {
+    // Manual trigger or On Change - get the last row
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    rowData = sheet.getRange(lastRow, 1, 1, lastCol).getValues()[0];
+    headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  }
 
   // Convert row to JSON object
   const payload = {};
+  let hasData = false;
+  let phoneValue = '';
+  let nameValue = '';
+
   headers.forEach((header, index) => {
-    // Clean header name for JSON keys
+    if (!header) return;
     const key = header.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    payload[key] = values[index];
-    // Also keep raw header as backup
-    payload[`raw_${key}`] = header;
+    const value = rowData[index];
+    payload[key] = value;
+    
+    // Check for critical fields
+    if (key.includes('phone')) phoneValue = value;
+    if (key.includes('name')) nameValue = value;
+    
+    if (value && value.toString().trim() !== '') hasData = true;
   });
+
+  // 🛑 GUARDRAILS: Don't send if empty or missing contact info
+  if (!hasData || (!phoneValue && !nameValue)) {
+    Logger.log('Skipping sync: Row is empty or missing name/phone.');
+    return;
+  }
+
+  // Don't send dummy "Sheet Lead" placeholders if they originate from the sheet itself
+  if (nameValue === 'Sheet Lead') {
+    Logger.log('Skipping sync: Dummy record detected.');
+    return;
+  }
 
   const options = {
     method: 'post',
     contentType: 'application/json',
-    payload: JSON.stringify(payload)
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
   };
 
   try {
